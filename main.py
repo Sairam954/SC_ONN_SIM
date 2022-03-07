@@ -7,6 +7,7 @@ from Exceptions.AcceleratorExceptions import VDPElementException
 from Hardware.Accelerator import Accelerator
 from Hardware.Adder import Adder
 from Hardware.MRRVDP import MRRVDP
+from Hardware.stochastic_MRRVDP import  Stocastic_MRRVDP
 from Hardware.Pool import Pool
 from Hardware.VDP import VDP
 from PerformanceMetrics.metrics import Metrics
@@ -42,6 +43,7 @@ OUTPUT_WIDTH  = "output_width"
 OUTPUT_DEPTH = "output_depth"
 
 
+
 #* performance metrics 
 HARDWARE_UTILIZATION = "hardware_utilization"
 TOTAL_LATENCY = "total_latency"
@@ -59,13 +61,12 @@ CONV_TYPE = "conv_type"
 VDP_TYPE = 'vdp_type'
 NAME = 'name'
 
-kernel_size= 5*5
 ring_radius= 4.55E-6
 pitch = 5E-6
 vdp_units = []
 
 
-def run(modelName,cnnModelDirectory,accelerator_config):
+def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 4):
     
     print("The Model being Processed---->", modelName)
     print("Simulator Excution Begin")
@@ -91,9 +92,12 @@ def run(modelName,cnnModelDirectory,accelerator_config):
         vdp_type = vdp_config[VDP_TYPE]
         accelerator.set_vdp_type(vdp_type)
         for vdp_no in range(vdp_config.get(UNITS_COUNT)):
-            vdp = MRRVDP(ring_radius,pitch,vdp_type,vdp_config.get(SUPPORTED_LAYER_LIST))
+            if vdp_config.get(ACC_TYPE) == 'STOCHASTIC':
+                vdp = Stocastic_MRRVDP(ring_radius,pitch,vdp_type,vdp_config.get(SUPPORTED_LAYER_LIST), vdp_config.get(BITRATE))
+            else:
+                vdp = MRRVDP(ring_radius,pitch,vdp_type,vdp_config.get(SUPPORTED_LAYER_LIST))
             for vdp_element in range(vdp_config.get(ELEMENT_COUNT)):
-                vdp_element = VDPElement(vdp_config[ELEMENT_SIZE],vdp_config.get(RECONFIG),vdp_config.get(AUTO_RECONFIG))
+                vdp_element = VDPElement(vdp_config[ELEMENT_SIZE],vdp_config.get(RECONFIG),vdp_config.get(AUTO_RECONFIG),vdp_config.get(PRECISION))
                 vdp.add_vdp_element(vdp_element)
             # * Need to call set vdp latency => includes latency of prop + tia latency + pd latency + etc            
             vdp.set_vdp_latency()
@@ -147,6 +151,13 @@ def run(modelName,cnnModelDirectory,accelerator_config):
         vdp_size = kernel_height*kernel_width*kernel_depth
         no_of_vdp_ops = output_height*output_depth*output_width
         
+        #* Estimate the additional vdp operations to achieve the required precision in Analog Accelerators
+        available_precision = accelerator.vdp_units_list[ZERO].vdp_element_list[ZERO].precision
+        if available_precision < required_precision:
+            required_precision_multiplier = (required_precision/available_precision)
+        else:
+            required_precision_multiplier = 1
+        no_of_vdp_ops = no_of_vdp_ops*required_precision_multiplier   
         #* Latency Calculation of the VDP operations
         layer_latency = 0
         #* Handles pooling layers and sends the requests to pooling unit 
@@ -207,19 +218,10 @@ def run(modelName,cnnModelDirectory,accelerator_config):
     return result 
     
   #* Creating accelerator with the configurations
-AMM = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:30, RECONFIG:[], VDP_TYPE:'AMM', NAME:'AMM'}]
-HOLY_LIGHT = [{ELEMENT_SIZE:128,ELEMENT_COUNT:128,UNITS_COUNT:12,RECONFIG:[], VDP_TYPE:'MAM', NAME:'HOLY_LIGHT'}]
-RAMM = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:20, RECONFIG:[9,16,25], VDP_TYPE:'AMM', NAME:'RAMM'}]
-CROSS_LIGHT = [{ELEMENT_SIZE:10,ELEMENT_COUNT:20,UNITS_COUNT:310,RECONFIG:[], VDP_TYPE:'AMM', NAME:'CROSS_LIGHT'},{ELEMENT_SIZE:15,ELEMENT_COUNT:30,UNITS_COUNT:170,RECONFIG:[], VDP_TYPE:'AMM', NAME:'CROSS_LIGHT'}]
-RMAM = [{ELEMENT_SIZE:128,ELEMENT_COUNT:128,UNITS_COUNT:8, RECONFIG:[9,16,25], VDP_TYPE:'MAM', NAME:'RMAM' }]
-RAMM_V2 = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:22, RECONFIG:[9,25], VDP_TYPE:'AMM', NAME:'RAMM_V2'}]
-RAMM_V3 = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:24, RECONFIG:[9], VDP_TYPE:'AMM', NAME:'RAMM_V3'}]
-RMAM_V2 = [{ELEMENT_SIZE:128,ELEMENT_COUNT:128,UNITS_COUNT:9, RECONFIG:[9,25], VDP_TYPE:'MAM', NAME:'RMAM_v2' }]
-RMAM_V3 = [{ELEMENT_SIZE:128,ELEMENT_COUNT:128,UNITS_COUNT:10, RECONFIG:[9], VDP_TYPE:'MAM', NAME:'RMAM_v3' }]
+STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:30, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:4, BITRATE: 50}]
+ANALOG_ACCELERATOR = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:30, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'ANALOG', PRECISION:2}]
 
-
-tpc_list = [AMM,HOLY_LIGHT,RAMM,RAMM_V2,RAMM_V3,RMAM,RMAM_V2,RMAM_V3]
-tpc_list = [CROSS_LIGHT]
+tpc_list = [STOCHASTIC_ACCELERATOR]
 
 cnnModelDirectory = "./CNNModels/"
 modelList =  [f for f in listdir(cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]

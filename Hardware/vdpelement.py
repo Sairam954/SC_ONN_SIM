@@ -7,10 +7,10 @@ from constants import *
 
 class VDPElement:
     
-    def  __init__(self,element_size,reconfigurable_to_element_sizes=[], auto_reconfigurable = False):
+    def  __init__(self,element_size,reconfigurable_to_element_sizes=[], auto_reconfigurable = False, precision = 4):
         self.element_size = element_size
         self.reconfigurable = False
-        self.precision = 4
+        self.precision = precision
         self.min_reconfig_size = 4
         if not auto_reconfigurable:
             self.set_reconfig_size_map(reconfigurable_to_element_sizes)

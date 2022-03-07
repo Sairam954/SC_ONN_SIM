@@ -7,3 +7,6 @@ LAST = -1
 ADDER = "adder"
 POOL = "pool"
 LAYERS_SUPPORTED = ["convolution","inner_product"]
+ACC_TYPE ="accelerator_type" 
+PRECISION = "precision"
+BITRATE = "bitrate"
