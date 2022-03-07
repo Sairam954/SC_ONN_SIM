@@ -1,0 +1,8 @@
+,config,hardware_utilization,total_latency,total_dynamic_energy,total_static_power
+6,"[{'element_size': 9, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 25, 'element_count': 20, 'units_count': 7, 'reconfig': [9]}, {'element_size': 50, 'element_count': 20, 'units_count': 7, 'reconfig': [9, 25]}]",98.63497979,0.002998416,209.7176663,161.4091576
+3,"[{'element_size': 9, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 25, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 50, 'element_count': 20, 'units_count': 7, 'reconfig': []}]",75.13740038,0.003891244,211.9679322,161.4091576
+5,"[{'element_size': 50, 'element_count': 20, 'units_count': 21, 'reconfig': [9, 25]}]",99.12254406,0.004275611,218.6135453,283.4300559
+2,"[{'element_size': 49, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",59.41288533,0.00540035,219.8778842,277.8836515
+4,"[{'element_size': 25, 'element_count': 20, 'units_count': 21, 'reconfig': [9]}]",96.52688251,0.010219225,188.2055344,144.7699442
+1,"[{'element_size': 25, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",85.91409004,0.010574136,188.8101107,144.7699442
+0,"[{'element_size': 9, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",99.9999762,0.111876264,243.8837461,56.02747264

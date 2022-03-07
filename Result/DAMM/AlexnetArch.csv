@@ -1,0 +1,2 @@
+,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area
+0,"[{'element_size': 10, 'element_count': 20, 'units_count': 20, 'reconfig': [], 'supported_layer_list': ['convolution']}, {'element_size': 15, 'element_count': 30, 'units_count': 20, 'reconfig': [], 'supported_layer_list': ['inner_product']}]",98.51645498171538,0.10608609348614816,9.426306192814723,148.2907977835704,185.10595009,0.028273539717877917,29.7360525

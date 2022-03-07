@@ -1,0 +1,2 @@
+,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area
+0,"[{'element_size': 78, 'element_count': 57, 'units_count': 18, 'reconfig': [4, 9, 16]}]",90.00539847293528,0.0021271617827147513,470.1099879313215,418.26440449612755,1065.1533288980402,0.3169100499126943,148.653129105

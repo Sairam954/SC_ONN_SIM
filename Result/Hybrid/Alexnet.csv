@@ -1,0 +1,21 @@
+,Name,config,hardware_utilization,total_latency,total_dynamic_energy,total_static_power,fps,total_data_dependent_power,fps/W,EDP(latency*(FPS/W))
+0,UNIFORM_NINE,"[{'element_size': 9, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",99.9999341,0.113199198,271.4837534,56.02747264,8.833984821,2398.283357,0.003683462,0.000416965
+1,UNIFORM_TWENTY_FIVE,"[{'element_size': 25, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",75.26610751,0.011680635,217.4224531,144.7699442,85.61178354,18613.92399,0.004599341,5.37232E-05
+2,UNIFORM_RECONFIG_FOURTY_NINE,"[{'element_size': 49, 'element_count': 20, 'units_count': 21, 'reconfig': []}]",49.85735002,0.006447321,250.0087587,277.8836515,155.1031798,38777.15346,0.00399986,2.57884E-05
+3,HYBRID,"[{'element_size': 9, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 25, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 50, 'element_count': 20, 'units_count': 7, 'reconfig': []}]",67.06841984,0.004935919,240.7700297,161.4091576,202.5965228,48779.17081,0.004153341,2.05006E-05
+4,UNIFORM_RECONFIG_TWENTY_FIVE,"[{'element_size': 25, 'element_count': 20, 'units_count': 21, 'reconfig': [9]}]",93.25298793,0.010861483,216.0270303,144.7699442,92.0684556,19889.27505,0.00462905,5.02784E-05
+5,UNIFORM_RECONFIG_FOURTY_NINE,"[{'element_size': 50, 'element_count': 20, 'units_count': 21, 'reconfig': [9, 25]}]",98.21859935,0.00457845,246.2770965,283.4300559,218.414531,53790.49654,0.004060467,1.85906E-05
+6,HYBRID_RECONFIG,"[{'element_size': 9, 'element_count': 20, 'units_count': 7, 'reconfig': []}, {'element_size': 25, 'element_count': 20, 'units_count': 7, 'reconfig': [9]}, {'element_size': 50, 'element_count': 20, 'units_count': 7, 'reconfig': [9, 25]}]",97.25575424,0.003462743,237.4126468,161.4091576,288.788389,68562.01581,0.004212076,1.45853E-05
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,Name,EDP(latency*(FPS/W)),,,,,,,,
+,HYBRID_RECONFIG,1.45853E-05,,,,,,,,
+,UNIFORM_RECONFIG_FOURTY_NINE,1.85906E-05,,,,,,,,
+,HYBRID,2.05006E-05,,,,,,,,
+,UNIFORM_RECONFIG_FOURTY_NINE,2.57884E-05,,,,,,,,
+,UNIFORM_RECONFIG_TWENTY_FIVE,5.02784E-05,,,,,,,,
+,UNIFORM_TWENTY_FIVE,5.37232E-05,,,,,,,,
+,UNIFORM_NINE,0.000416965,,,,,,,,
