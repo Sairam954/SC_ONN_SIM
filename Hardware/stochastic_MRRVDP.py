@@ -24,14 +24,14 @@ class Stocastic_MRRVDP(VDP):
         [type]: [description]
     """
     
-    def __init__(self,ring_radius,pitch,vdp_type, supported_layer_list = [], bit_rate = 50*1e9) -> None:
+    def __init__(self,ring_radius,pitch,vdp_type, supported_layer_list = [], bit_rate = 50) -> None:
         self.ring_radius = ring_radius
         self.pitch = pitch
         self.vdp_type = vdp_type
         self.start_time = 0
         self.end_time = 0 
         self.vdp_element_list = []  
-        self.br = bit_rate #* Bit rate is defined in BPS which defines the latency of the VDP unit in digital domain
+        self.br = bit_rate*1e9 #* Bit rate is defined in BPS which defines the latency of the VDP unit in digital domain
         self.pheripheral_latency = 4.68e-9
         self.calls_count = 0
         # * other latency is from HolyLight clock 1.28GHz => 1 cycle ADC, 1 cycle DRAM, 2 cycle S_A, 1 cycle Activation and 1 cycle writeback => 6 cycle*78.125ns  
@@ -55,8 +55,8 @@ class Stocastic_MRRVDP(VDP):
         if self.vdp_type == 'AMM':
             distance = self.vdp_element_list[0].element_size*(2*np.pi*self.ring_radius+self.pitch)
             self.prop_latency = distance/(3e8)
-            self.mod_latency = (2**self.vdp_element_list[0].precision)/self.br
-            self.latency = self.prop_latency +self.mod_latency+self.pheripheral_latency
+            self.mod_latency = (2**self.vdp_element_list[0].precision)/(self.br)
+            self.latency = self.mod_latency+self.pheripheral_latency
             return self.latency
         else:
             raise VDPException('The latency calculation for specified type is not supported')

@@ -17,9 +17,13 @@ class Accelerator:
         self.is_hybrid = False
         self.vdp_element_sizes = set()
         self.pheripherals = {}
+        self.acc_type = 'ANALOG'
     
     def set_vdp_type(self,vdp_type):
         self.vdp_type = vdp_type
+    
+    def set_acc_type(self,acc_type):
+        self.acc_type = acc_type
     
     def add_vdp(self,vdp):
         """[summary]

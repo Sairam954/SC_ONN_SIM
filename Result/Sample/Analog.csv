@@ -1,0 +1,2 @@
+,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
+0,STOCHASTIC,ResNet50.csv,"[{'element_size': 105, 'element_count': 128, 'units_count': 32, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'STOCHASTIC', 'accelerator_type': 'STOCHASTIC', 'precision': 4, 'bitrate': 50}]",97.03874826572137,0.0028160231250007953,355.110720193293,911.3303860421843,130886.73409205755,0.0007813046571431593,637.13754328,1.226273142092653e-06

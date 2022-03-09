@@ -66,7 +66,7 @@ pitch = 5E-6
 vdp_units = []
 
 
-def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 4):
+def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
     
     print("The Model being Processed---->", modelName)
     print("Simulator Excution Begin")
@@ -91,6 +91,7 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 4):
     for vdp_config in run_config:
         vdp_type = vdp_config[VDP_TYPE]
         accelerator.set_vdp_type(vdp_type)
+        accelerator.set_acc_type(vdp_config.get(ACC_TYPE))
         for vdp_no in range(vdp_config.get(UNITS_COUNT)):
             if vdp_config.get(ACC_TYPE) == 'STOCHASTIC':
                 vdp = Stocastic_MRRVDP(ring_radius,pitch,vdp_type,vdp_config.get(SUPPORTED_LAYER_LIST), vdp_config.get(BITRATE))
@@ -194,13 +195,11 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 4):
         area += metrics.get_total_area(vdp_type,accelearator_config[UNITS_COUNT],0,accelearator_config[ELEMENT_SIZE],accelearator_config[ELEMENT_COUNT],0,0,accelearator_config[RECONFIG])
         print("Area_pre",area)
     fps_per_w_area = fps_per_w/area
-    print("Area :", area)
-    print("Total Latency ", total_latency)
-    print("utilized rings :", controller.utilized_rings)
-    print("Idle rings :",controller.idle_rings)
-    print("Hardware utilization", metrics.get_hardware_utilization(controller.utilized_rings,controller.idle_rings))
-    print("Dynamic Energy (W)", metrics.get_dynamic_energy(accelerator,controller.utilized_rings))
-    print("Total Static Power (W)", metrics.get_static_power(accelerator))
+    # print("Area :", area)
+    print("Total Latency ->", total_latency)
+    print("FPS ->", fps)
+    print("FPS/W  ->", fps_per_w)
+    print("FPS/W/Area  ->", fps_per_w_area)
 
     result[NAME] = accelerator_config[0][NAME]
     result['Model_Name'] = modelName
@@ -218,21 +217,22 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 4):
     return result 
     
   #* Creating accelerator with the configurations
-STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:30, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:4, BITRATE: 50}]
-ANALOG_ACCELERATOR = [{ELEMENT_SIZE:78,ELEMENT_COUNT:78,UNITS_COUNT:30, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'ANALOG', PRECISION:2}]
+STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:105,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:4, BITRATE: 50}]
+ANALOG_AMM_ACCELERATOR = [{ELEMENT_SIZE:32,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'AMM', NAME:'ANALOG_AMM', ACC_TYPE:'ANALOG', PRECISION:4}]
+ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE:40,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4}]
 
-tpc_list = [STOCHASTIC_ACCELERATOR]
+tpc_list = [ANALOG_AMM_ACCELERATOR,ANALOG_MAM_ACCELERATOR,STOCHASTIC_ACCELERATOR]
 
 cnnModelDirectory = "./CNNModels/"
 modelList =  [f for f in listdir(cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
-modelList = ['ResNet50.csv','EfficientNet_B7.csv']
+# modelList = ['ResNet50.csv']
 system_level_results = [] 
 for tpc in tpc_list:  
     for modelName in modelList:
         print("Model being Processed ", modelName)            
         system_level_results.append(run(modelName,cnnModelDirectory,tpc))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/Area_Equivalent/'+'crosslight_metrics_test1.csv')  
+sys_level_results_df.to_csv('Result/'+'All_Model_Metrics.csv')  
 
 
 

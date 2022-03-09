@@ -1,4 +1,7 @@
+from Hardware.Accumulator_TIA import Accumulator_TIA
+from Hardware.BtoS import BtoS
 from Hardware.MRR import MRR
+from Hardware.Serializer import Serializer
 from Hardware.eDram import EDram
 from Hardware.ADC import ADC
 from Hardware.DAC import DAC
@@ -22,10 +25,13 @@ class Metrics:
         self.bus = Bus()
         self.router = Router()
         self.activation = Activation()
+        self.serializer = Serializer()
+        self.accum_tia = Accumulator_TIA()
+        self.b_to_s = BtoS()
         self.laser_power_per_wavelength = 1.274274986e-3
         self.wall_plug_efficiency = 5 # 20%
         self.thermal_tuning_latency = 4000e-9
-      
+
     
     def get_hardware_utilization(self,utilized_rings,idle_rings):
         
@@ -43,11 +49,15 @@ class Metrics:
             pd_energy = vdp.calls_count*vdp.get_element_count()*self.pd.energy
             tia_energy = vdp.calls_count*vdp.get_element_count()*self.tia.energy
             total_energy+= eDram_energy+pd_energy+tia_energy
-        
+        if accelerator.acc_type == 'ANALOG':
+             dac_energy = self.dac.energy*utilized_rings
+             total_energy = total_energy+dac_energy
+        elif accelerator.acc_type == 'STOCHASTIC':
+             serializer_energy = self.serializer.energy*utilized_rings
+             total_energy = total_energy+ serializer_energy
         adc_energy = self.adc.energy*utilized_rings
-        dac_energy = self.dac.energy*utilized_rings
         mrr_energy = self.mrr.energy*utilized_rings
-        total_energy += adc_energy+dac_energy+mrr_energy
+        total_energy += adc_energy+mrr_energy
         return total_energy
     
     def get_total_latency(self,latencylist):
@@ -60,23 +70,48 @@ class Metrics:
         vdp_power = 0
         for vdp in accelerator.vdp_units_list:
             # * adding no of comb switches  to the vdp element
-            reconfig_sizes = vdp.get_vdp_element_reconfig_sizes()
             element_size = vdp.vdp_element_list[0].element_size
             elements_count = vdp.get_element_count()
-            no_of_comb_switches = 0
-            # print(reconfig_sizes)
-            if isinstance(reconfig_sizes,list):
-                no_of_comb_switches_per_element = 0
-                for re_size in reconfig_sizes:
-                    no_of_comb_switches_per_element += int(element_size/re_size)*2
-                # print('No of comb switches per element', no_of_comb_switches_per_element)
-                no_of_comb_switches = no_of_comb_switches_per_element*elements_count
-            if vdp.vdp_type == 'AMM' :
             
-                no_of_adc = 2*elements_count*element_size+no_of_comb_switches 
-                no_of_dac = 2*elements_count*element_size+no_of_comb_switches
-                no_of_pd = elements_count+no_of_comb_switches*2
-                no_of_tia = elements_count+no_of_comb_switches*2
+            if vdp.vdp_type == 'AMM' :
+                if accelerator.acc_type == 'ANALOG':
+                    no_of_adc = 2*elements_count*element_size
+                    no_of_dac = 2*elements_count*element_size
+                    no_of_pd = elements_count
+                    no_of_tia = elements_count
+                    no_of_mrr =  2*elements_count*element_size+element_size
+                    laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                    power_params = {}
+                    power_params['adc'] = no_of_adc*self.adc.power
+                    power_params['dac'] = no_of_dac*self.dac.power 
+                    power_params['pd'] =  no_of_pd*self.pd.power
+                    power_params['tia'] = no_of_tia*self.tia.power
+                    power_params['mrr'] = no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) 
+                    power_params['laser_power'] = laser_power
+                    vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia*self.tia.power + no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + laser_power*self.wall_plug_efficiency
+                elif accelerator.acc_type=='STOCHASTIC':
+                    no_of_adc = 2*elements_count*element_size
+                    no_of_btos = 2*elements_count*element_size
+                    no_of_pd = elements_count
+                    no_of_accumulator = elements_count
+                    no_of_serializers =  2*elements_count*element_size
+                    no_of_mrr =  2*elements_count*element_size+element_size
+                    laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                    power_params = {}
+                    power_params['adc'] = no_of_adc*self.adc.power
+                    power_params['btos'] = no_of_btos*self.b_to_s.power 
+                    power_params['pd'] =  no_of_pd*self.pd.power
+                    power_params['accumulator_tia'] = no_of_accumulator*self.accum_tia.power
+                    power_params['mrr'] = no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) 
+                    power_params['serializer'] = no_of_serializers*self.serializer.power
+                    power_params['laser_power'] = laser_power
+                    vdp_power += no_of_adc*self.adc.power+no_of_btos*self.b_to_s.power+no_of_pd*self.pd.power+no_of_accumulator*self.tia.power+no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) +no_of_serializers*self.serializer.power+ laser_power*self.wall_plug_efficiency
+                    
+            elif vdp.vdp_type == 'MAM':
+                no_of_adc = elements_count*element_size
+                no_of_dac = elements_count*element_size
+                no_of_pd =  elements_count
+                no_of_tia = elements_count
                 no_of_mrr =  2*elements_count*element_size+element_size
                 laser_power = self.laser_power_per_wavelength*elements_count*element_size
                 power_params = {}
@@ -84,26 +119,10 @@ class Metrics:
                 power_params['dac'] = no_of_dac*self.dac.power 
                 power_params['pd'] =  no_of_pd*self.pd.power
                 power_params['tia'] = no_of_tia*self.tia.power
-                power_params['mrr'] = no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + no_of_comb_switches*(self.mrr.power_eo)
+                power_params['mrr'] = no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) 
                 power_params['laser_power'] = laser_power
                 
-                vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia*self.tia.power + no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + no_of_comb_switches*(self.mrr.power_eo) + laser_power*self.wall_plug_efficiency
-            elif vdp.vdp_type == 'MAM':
-                no_of_adc = elements_count*element_size +no_of_comb_switches
-                no_of_dac = elements_count*element_size +no_of_comb_switches
-                no_of_pd =  elements_count+no_of_comb_switches*2
-                no_of_tia = elements_count+no_of_comb_switches
-                no_of_mrr =  2*elements_count*element_size+element_size+no_of_comb_switches
-                laser_power = self.laser_power_per_wavelength*elements_count*element_size
-                power_params = {}
-                power_params['adc'] = no_of_adc*self.adc.power
-                power_params['dac'] = no_of_dac*self.dac.power 
-                power_params['pd'] =  no_of_pd*self.pd.power
-                power_params['tia'] = no_of_tia*self.tia.power
-                power_params['mrr'] = no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + no_of_comb_switches*(self.mrr.power_eo)
-                power_params['laser_power'] = laser_power
-                
-                vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia*self.tia.power + no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + no_of_comb_switches*(self.mrr.power_eo) + laser_power*self.wall_plug_efficiency
+                vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia*self.tia.power + no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + laser_power*self.wall_plug_efficiency
             
                 
         
@@ -119,7 +138,7 @@ class Metrics:
             # print("Pheripheral Power ", pheripheral_power_params)
         return total_power
         
-    def get_total_area(self,TYPE, X, Y, N, M, N_FC, M_FC,reconfig_list=[]):
+    def get_total_area(self,TYPE, X, Y, N, M, N_FC, M_FC,reconfig_list=[], acc_type= 'ANALOG'):
         pitch = 5  # um
         radius = 4.55  # um
         S_A_area = 0.00003  # mm2
@@ -131,35 +150,18 @@ class Metrics:
         splitter = 0.005  # mm2
         pd = 1.40625 * 1e-5  # mm2
         adc = 1.2 * 1e-3  # mm2
-        dac = 3 * 10e-5  # mm2
+        dac = 3 * 1e-5  # mm2
         io_interface = 0.0244 #mm2
-        no_of_comb_switches = 0
-        reconfig_comb_switch_ring_radius_amm = { 4: 7.3 , 9:17.5, 16:32, 25:44.2}
-        reconfig_comb_switch_ring_radius_mam = { 4: 7 , 9:15.77, 16:28, 25:43.9}
-        reconfig_radius = {'AMM':reconfig_comb_switch_ring_radius_amm, 'MAM':reconfig_comb_switch_ring_radius_mam }
-        comb_switch_array_length = 0   
-         
-        if len(reconfig_list)>0:
-            no_of_comb_switches_per_element = 0
-            # print("Reconfig List :", reconfig_list)
-            for re_size in reconfig_list:
-                no_of_comb_switches_per_element = int(N/re_size)
-                # print("No of CS :", no_of_comb_switches_per_element)
-                # print("Array Length",reconfig_radius[TYPE][re_size]*2+pitch)
-                comb_switch_array_length += (reconfig_radius[TYPE][re_size]*2+pitch)*no_of_comb_switches_per_element
-                no_of_comb_switches += no_of_comb_switches_per_element*2
-                # print("Comb Switch Array Length ;",comb_switch_array_length)
-            # print('No of comb switches per element', no_of_comb_switches_per_element)
-        # print("Comb Switch Array Length --->",comb_switch_array_length)
-        # print("No of Comb Switches --->",no_of_comb_switches)
-
+        serializer = 5.9*1e-3 #mm2
+       
+     
         if TYPE == 'MAM':
             premux = 30  # um
             WDM = 2 * pitch + 2 * radius
             preweight = 130
             weightblk = N * radius + N * pitch + 2 * pitch
             width = premux + WDM + preweight + weightblk
-            height_N = 4 * pitch + N * (radius + pitch)+comb_switch_array_length
+            height_N = 4 * pitch + N * (radius + pitch)
             height_M = 4 * pitch + M * (radius + pitch)
             if height_M > height_N:
                 height = height_M
@@ -172,11 +174,11 @@ class Metrics:
             fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
             splitter_area = M * splitter
             splitter_area_FC = 0
-            pd_area = (M+no_of_comb_switches*2) * pd
+            pd_area = (M) * pd
             pd_area_fc = M_FC * pd
-            adc_area = M * (N+no_of_comb_switches) * adc
+            adc_area = M * (N) * adc
             adc_area_fc = M_FC * N_FC * adc
-            dac_area = M * (N+no_of_comb_switches) * dac
+            dac_area = M * (N) * dac
             dac_area_fc = M_FC * N_FC * dac
 
             total_cnn_units_area = X*(cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
@@ -192,7 +194,7 @@ class Metrics:
             preweight = 130
             weightblk = 2*(N * radius + N * pitch) + 2 * pitch
             width = premux + WDM + preweight + weightblk
-            height_N = 4 * pitch + N * (radius + pitch)+comb_switch_array_length
+            height_N = 4 * pitch + N * (radius + pitch)
             height_M = 4 * pitch + M * (radius + pitch)
             if height_M > height_N:
                 height = height_M
@@ -205,18 +207,20 @@ class Metrics:
             fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
             splitter_area = M * splitter
             splitter_area_FC = 0
-            pd_area = (M+no_of_comb_switches*2) * pd
+            pd_area = (M) * pd
             pd_area_fc = M_FC * pd
-            adc_area = M * (N+no_of_comb_switches) * adc
+            adc_area = M * (N) * adc
             adc_area_fc = M_FC * N_FC * adc
-            dac_area = M * (N+no_of_comb_switches) * dac
-            dac_area_fc = M_FC * N_FC * dac
-
-
-            total_cnn_units_area = X * (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
-
-            total_fc_units_area = Y * (fc_vdp_unit_area + pd_area_fc + splitter_area_FC + adc_area_fc + dac_area_fc)
-
+            if acc_type=='STOCHASTIC':
+                serializer_area =  M * (N) *serializer
+                serializer_area_fc = M_FC * N_FC *serializer
+                total_cnn_units_area = X * (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + serializer_area)
+                total_fc_units_area = Y * (fc_vdp_unit_area + pd_area_fc + splitter_area_FC + adc_area_fc + serializer_area_fc)
+            else:    
+                dac_area = M * (N) * dac
+                dac_area_fc = M_FC * N_FC * dac
+                total_cnn_units_area = X * (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
+                total_fc_units_area = Y * (fc_vdp_unit_area + pd_area_fc + splitter_area_FC + adc_area_fc + dac_area_fc)
             total_area = total_cnn_units_area + total_fc_units_area + S_A_area + eDram_area + sigmoid + router + bus + max_pool_area+io_interface
 
             return total_area

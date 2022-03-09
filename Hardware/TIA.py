@@ -2,7 +2,7 @@ class TIA:
     
     def __init__(self):
         self.no_of_parallel_requests = 1
-        self.power = 7.2e-3
+        self.power = 0.017 # * taken from excel scheet 
         self.energy = 0.21e-12
         self.latency = None  # todo find the latency of the TIA element 
         self.area = None
