@@ -122,6 +122,7 @@ class Controller:
             # print("Cycle =>",cycle)
             # print("Clock =>",clock)
             vdp_no = 0
+            partial_sum_list = []
             accelerator.pheripherals[ADDER].controller(clock)
             for vdp in accelerator.vdp_units_list:
                 # print("VDP End Time: ", vdp.end_time)
@@ -184,7 +185,7 @@ class Controller:
                         # * Sceduling of partial sum request and updating convolution latency 
                         partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
                         vdp.end_time = vdp.end_time + partial_sum_latency
-                        # print("Partial Sum latency ", partial_sum_latency)     
+                         
                     if convolutions <= 0:
                         completed_layer=True
                         # print("************Convolutions Completed****************",convolutions)

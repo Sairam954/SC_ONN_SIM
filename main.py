@@ -155,7 +155,7 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
         #* Estimate the additional vdp operations to achieve the required precision in Analog Accelerators
         available_precision = accelerator.vdp_units_list[ZERO].vdp_element_list[ZERO].precision
         if available_precision < required_precision:
-            required_precision_multiplier = (required_precision/available_precision)
+            required_precision_multiplier = math.ceil(required_precision/available_precision)
         else:
             required_precision_multiplier = 1
         no_of_vdp_ops = no_of_vdp_ops*required_precision_multiplier   
@@ -172,8 +172,13 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
             if accelerator.vdp_type == "MAM":
                 # print("MAM type architecture ")
                 vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
+                # print("Total VDP Ops ", no_of_vdp_ops)
+                # print("VDP per Tensor ", vdp_per_tensor)
+                # print("Tensor Count ", tensor_count)
                 for tensor in range(0,tensor_count):
-                    layer_latency += controller.get_convolution_latency(accelerator,vdp_per_tensor,vdp_size) 
+                    layer_latency += controller.get_convolution_latency(accelerator,vdp_per_tensor,vdp_size)
+                    accelerator.reset() 
+                    # print("Layer latency", layer_latency)
             else:
                 layer_latency = controller.get_convolution_latency(accelerator,no_of_vdp_ops,vdp_size)
         total_latency.append(layer_latency)
@@ -202,7 +207,7 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
     print("FPS/W/Area  ->", fps_per_w_area)
 
     result[NAME] = accelerator_config[0][NAME]
-    result['Model_Name'] = modelName
+    result['Model_Name'] = modelName.replace(".csv","")
     result[CONFIG] = run_config
     result[HARDWARE_UTILIZATION] = hardware_utilization
     result[TOTAL_LATENCY] = total_latency
@@ -217,22 +222,26 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
     return result 
     
   #* Creating accelerator with the configurations
-STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:105,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:4, BITRATE: 50}]
-ANALOG_AMM_ACCELERATOR = [{ELEMENT_SIZE:32,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'AMM', NAME:'ANALOG_AMM', ACC_TYPE:'ANALOG', PRECISION:4}]
-ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE:40,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4}]
+  
+accelerator_required_precision = 16
+STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:257,ELEMENT_COUNT:128,UNITS_COUNT:64, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:8, BITRATE: 30}]
+ANALOG_AMM_ACCELERATOR = [{ELEMENT_SIZE:32,ELEMENT_COUNT:128,UNITS_COUNT:128, RECONFIG:[], VDP_TYPE:'AMM', NAME:'ANALOG_AMM', ACC_TYPE:'ANALOG', PRECISION:4}]
+ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE:40,ELEMENT_COUNT:128,UNITS_COUNT:128, RECONFIG:[], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4}]
 
-tpc_list = [ANALOG_AMM_ACCELERATOR,ANALOG_MAM_ACCELERATOR,STOCHASTIC_ACCELERATOR]
 
+
+tpc_list = [ANALOG_AMM_ACCELERATOR,ANALOG_MAM_ACCELERATOR]
+print("Required Precision ",accelerator_required_precision)
 cnnModelDirectory = "./CNNModels/"
 modelList =  [f for f in listdir(cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
 # modelList = ['ResNet50.csv']
 system_level_results = [] 
 for tpc in tpc_list:  
     for modelName in modelList:
-        print("Model being Processed ", modelName)            
-        system_level_results.append(run(modelName,cnnModelDirectory,tpc))
+        print("Model being Processed ", modelName)          
+        system_level_results.append(run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/'+'All_Model_Metrics.csv')  
+sys_level_results_df.to_csv('Result/ACC_SIXTEEN_BIT/'+'Analog_Metrics.csv')  
 
 
 

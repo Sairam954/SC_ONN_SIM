@@ -31,7 +31,7 @@ class MRRVDP(VDP):
         self.start_time = 0
         self.end_time = 0 
         self.vdp_element_list = []  
-        self.eo_tuning_latency = 20e-9
+        self.eo_tuning_latency = 1e-9
         self.tia_latency = 0.15e-9
         self.pd_latency = 5.8e-9
         self.pheripheral_latency = 4.68e-9
@@ -59,11 +59,21 @@ class MRRVDP(VDP):
             distance = self.vdp_element_list[0].element_size*(2*np.pi*self.ring_radius+self.pitch)
             self.prop_latency = distance/(3e8)
             self.latency = self.prop_latency +self.eo_tuning_latency+self.tia_latency+self.pd_latency+self.pheripheral_latency
+            # print("Analog Latency ---->",self.latency )
+            # print("EO Tuning Latency---->",self.eo_tuning_latency)
+            # print("TIA  Latency---->",self.tia_latency)
+            # print("PD  Latency---->",self.pd_latency)
+            # print("Pheripheral Latency---->",self.pheripheral_latency)
             return self.latency
         elif self.vdp_type == 'MAM':
             distance = self.vdp_element_list[0].element_size*(2*np.pi*self.ring_radius+self.pitch)
             self.prop_latency = distance/(3e8)
             self.latency = self.prop_latency +self.eo_tuning_latency+self.tia_latency+self.pd_latency+self.pheripheral_latency
+            # print("Analog Latency ---->",self.latency )
+            # print("EO Tuning Latency---->",self.eo_tuning_latency)
+            # print("TIA  Latency---->",self.tia_latency)
+            # print("PD  Latency---->",self.pd_latency)
+            # print("Pheripheral Latency---->",self.pheripheral_latency)
             return self.latency
         else:
             raise VDPException('The latency calculation for specified type is not supported')

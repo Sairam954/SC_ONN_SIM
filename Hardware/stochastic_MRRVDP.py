@@ -55,8 +55,12 @@ class Stocastic_MRRVDP(VDP):
         if self.vdp_type == 'AMM':
             distance = self.vdp_element_list[0].element_size*(2*np.pi*self.ring_radius+self.pitch)
             self.prop_latency = distance/(3e8)
-            self.mod_latency = (2**self.vdp_element_list[0].precision)/(self.br)
+            self.mod_latency = (2**(self.vdp_element_list[0].precision))/(self.br)
             self.latency = self.mod_latency+self.pheripheral_latency
+            # print("Stochastic Latency -->",self.latency)
+            # print("Modulation Latency -->",self.mod_latency)
+            # print("PheriPheral Latency -->", self.pheripheral_latency)
+         
             return self.latency
         else:
             raise VDPException('The latency calculation for specified type is not supported')
