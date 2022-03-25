@@ -223,14 +223,14 @@ def run(modelName,cnnModelDirectory,accelerator_config, required_precision = 8):
     
   #* Creating accelerator with the configurations
   
-accelerator_required_precision = 16
-STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:257,ELEMENT_COUNT:128,UNITS_COUNT:64, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC', ACC_TYPE:'STOCHASTIC', PRECISION:8, BITRATE: 30}]
+accelerator_required_precision = 4
+STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE:149,ELEMENT_COUNT:128,UNITS_COUNT:32, RECONFIG:[], VDP_TYPE:'AMM', NAME:'STOCHASTIC($BER^{-3}$)', ACC_TYPE:'STOCHASTIC', PRECISION:4, BITRATE: 30}]
 ANALOG_AMM_ACCELERATOR = [{ELEMENT_SIZE:32,ELEMENT_COUNT:128,UNITS_COUNT:128, RECONFIG:[], VDP_TYPE:'AMM', NAME:'ANALOG_AMM', ACC_TYPE:'ANALOG', PRECISION:4}]
 ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE:40,ELEMENT_COUNT:128,UNITS_COUNT:128, RECONFIG:[], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4}]
 
 
 
-tpc_list = [ANALOG_AMM_ACCELERATOR,ANALOG_MAM_ACCELERATOR]
+tpc_list = [STOCHASTIC_ACCELERATOR]
 print("Required Precision ",accelerator_required_precision)
 cnnModelDirectory = "./CNNModels/"
 modelList =  [f for f in listdir(cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
@@ -241,7 +241,7 @@ for tpc in tpc_list:
         print("Model being Processed ", modelName)          
         system_level_results.append(run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/ACC_SIXTEEN_BIT/'+'Analog_Metrics.csv')  
+sys_level_results_df.to_csv('Result/ACC_FOUR_BIT/'+'STOCHASTIC_BER_3.csv')  
 
 
 
