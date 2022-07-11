@@ -1,0 +1,2 @@
+,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
+0,ANALOG_MAM,ShuffleNet_V2,"[{'element_size': 44, 'element_count': 44, 'units_count': 3172, 'reconfig': [], 'vdp_type': 'MAM', 'name': 'ANALOG_MAM', 'accelerator_type': 'ANALOG', 'precision': 4, 'bitrate': 5}]",92.20796257716174,0.0008676000000000022,1152.6048870447182,56.01248410771958,113148518.31274232,1.0180845725120278e-05,1016465.627086276,1.001592720287446e-11

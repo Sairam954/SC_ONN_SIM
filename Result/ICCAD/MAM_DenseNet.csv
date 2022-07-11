@@ -1,0 +1,2 @@
+,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
+0,ANALOG_MAM,DenseNet121,"[{'element_size': 44, 'element_count': 44, 'units_count': 3172, 'reconfig': [], 'vdp_type': 'MAM', 'name': 'ANALOG_MAM', 'accelerator_type': 'ANALOG', 'precision': 4, 'bitrate': 5}]",100.0,0.0181712435028657,55.03200701934872,413.47488993182895,113148518.31274232,4.862718755656916e-07,1016465.627086276,4.78394805104824e-13

@@ -1,0 +1,2 @@
+,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
+0,SCONNA,ShuffleNet_V2,"[{'element_size': 176, 'element_count': 176, 'units_count': 512, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'SCONNA', 'accelerator_type': 'STOCHASTIC', 'precision': 8, 'bitrate': 30}]",64.35330367777998,1.5428125e-05,64816.690297751666,75.76474773270535,74708741.79964207,0.0008140799657598163,1017535.6945886302,8.000505241134886e-10

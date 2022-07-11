@@ -145,7 +145,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         output_width = nnModel[OUTPUT_WIDTH][idx]
         output_depth = nnModel[OUTPUT_DEPTH][idx]
         # * debug statments to be deleted
-        # print('Layer Name  ;', layer_type)
+        print('Layer Name  ;', layer_type)
         # print('Kernel Height', kernel_height,'Kernel width',kernel_width, 'Kernel Depth', kernel_depth)
 
         # * VDP size and Number of VDP operations per layer
@@ -171,7 +171,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         else:
             # * other layers are handled here
             # * if VDP_type = MAM then the inputs are shared so need to process tensor by tensor rather than whole layer VDP operations
-            if accelerator.vdp_type == "MAM":
+            # if accelerator.vdp_type == "MAM":
+            if True:
                 # print("MAM type architecture ")
                 vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
                 # print("Total VDP Ops ", no_of_vdp_ops)
@@ -255,13 +256,12 @@ ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 317
 ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
 
 
-tpc_list = [STOCHASTIC_ACCELERATOR,
-            ANALOG_AMM_ACCELERATOR, ANALOG_MAM_ACCELERATOR]
+tpc_list = [ANALOG_MAM_ACCELERATOR]
 print("Required Precision ", accelerator_required_precision)
 cnnModelDirectory = "./CNNModels/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
-modelList = ['ResNet50.csv']
+modelList = ['MobileNet_V2.csv']
 system_level_results = []
 for tpc in tpc_list:
     for modelName in modelList:
@@ -269,7 +269,7 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/ICCAD/'+'ALL_R.csv')
+sys_level_results_df.to_csv('Result/ICCAD/'+'MAM_MobileNet_V2.csv')
 
 
 # #* set clock increment time as the vdp latency time for uniform vdp accelerator
