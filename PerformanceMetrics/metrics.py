@@ -8,6 +8,7 @@ from Hardware.ADC import ADC
 from Hardware.DAC import DAC
 from Hardware.PD import PD
 from Hardware.TIA import TIA
+from Hardware.VCSEL import VCSEL
 from Hardware.io_interface import IOInterface
 from Hardware.bus import Bus
 from Hardware.router import Router
@@ -30,9 +31,12 @@ class Metrics:
         self.serializer = Serializer()
         self.accum_tia = Accumulator_TIA()
         self.b_to_s = BtoS()
+        self.vcsel = VCSEL()
         self.laser_power_per_wavelength = 1.274274986e-3
         self.wall_plug_efficiency = 5  # 20%
         self.thermal_tuning_latency = 4000e-9
+        self.photonic_adder = 1060+5.12+200 
+        
 
     def get_hardware_utilization(self, utilized_rings, idle_rings):
 
@@ -56,6 +60,10 @@ class Metrics:
         elif accelerator.acc_type == 'STOCHASTIC':
             serializer_energy = self.serializer.energy*utilized_rings
             total_energy = total_energy + serializer_energy
+        elif accelerator.acc_type == 'ROBIN':
+            vcsel_energy = vdp.calls_count*self.vcsel.energy
+            total_energy = total_energy + vcsel_energy
+            
         adc_energy = self.adc.energy*utilized_rings
         mrr_energy = self.mrr.energy*utilized_rings
         total_energy += adc_energy+mrr_energy
@@ -76,7 +84,7 @@ class Metrics:
 
             if vdp.vdp_type == 'AMM':
                 if accelerator.acc_type == 'ANALOG':
-                    no_of_adc = 2*elements_count*element_size
+                    no_of_adc = elements_count*element_size
                     no_of_dac = 2*elements_count*element_size
                     no_of_pd = elements_count
                     no_of_tia = elements_count
@@ -95,7 +103,7 @@ class Metrics:
                         (self.mrr.power_eo+self.mrr.power_to) + \
                         laser_power*self.wall_plug_efficiency
                 elif accelerator.acc_type == 'STOCHASTIC':
-                    no_of_adc = 2*elements_count*element_size
+                    no_of_adc = elements_count*element_size
                     no_of_btos = 2*elements_count*element_size
                     no_of_pd = elements_count
                     no_of_accumulator = elements_count
@@ -116,6 +124,65 @@ class Metrics:
                     vdp_power += no_of_adc*self.adc.power+no_of_btos*self.b_to_s.power+no_of_pd*self.pd.power+no_of_accumulator*self.tia.power + \
                         no_of_mrr*(self.mrr.power_eo+self.mrr.power_to) + no_of_serializers * \
                         self.serializer.power + laser_power*self.wall_plug_efficiency
+                elif accelerator.acc_type == 'ROBIN':
+                    no_of_adc = elements_count*element_size
+                    no_of_dac = 2*elements_count*element_size
+                    no_of_pd = elements_count
+                    no_of_tia = elements_count
+                    no_of_VCSEL = elements_count
+                    no_of_mrr = 2*elements_count*element_size+element_size
+                    laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                    power_params = {}
+                    power_params['adc'] = no_of_adc*self.adc.power
+                    power_params['dac'] = no_of_dac*self.dac.power
+                    power_params['pd'] = no_of_pd*self.pd.power
+                    power_params['tia'] = no_of_tia*self.tia.power
+                    power_params['mrr'] = no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to)
+                    power_params['laser_power'] = laser_power
+                    vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia * \
+                        self.tia.power + no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to) + \
+                        laser_power*self.wall_plug_efficiency + no_of_VCSEL*self.vcsel.power
+                elif accelerator.acc_type == 'ONNA':
+                    no_of_adc = elements_count*element_size
+                    no_of_dac = 2*elements_count*element_size
+                    no_of_pd = elements_count
+                    no_of_tia = elements_count
+                    no_of_VCSEL = elements_count
+                    no_of_mrr = 2*elements_count*element_size+element_size
+                    laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                    power_params = {}
+                    power_params['adc'] = no_of_adc*self.adc.power
+                    power_params['dac'] = no_of_dac*self.dac.power
+                    power_params['pd'] = no_of_pd*self.pd.power
+                    power_params['tia'] = no_of_tia*self.tia.power
+                    power_params['mrr'] = no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to)
+                    power_params['laser_power'] = laser_power
+                    vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia * \
+                        self.tia.power + no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to) + \
+                        laser_power*self.wall_plug_efficiency + no_of_VCSEL*self.vcsel.power
+                elif accelerator.acc_type == 'LIGHTBULB':
+                    no_of_adc = elements_count*element_size
+                    no_of_dac = 3*elements_count*element_size
+                    no_of_pd = elements_count
+                    no_of_tia = elements_count
+                    no_of_mrr = 3*elements_count*element_size+element_size
+                    laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                    power_params = {}
+                    power_params['adc'] = no_of_adc*self.adc.power
+                    power_params['dac'] = no_of_dac*self.dac.power
+                    power_params['pd'] = no_of_pd*self.pd.power
+                    power_params['tia'] = no_of_tia*self.tia.power
+                    power_params['mrr'] = no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to)
+                    power_params['laser_power'] = laser_power
+                    vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia * \
+                        self.tia.power + no_of_mrr * \
+                        (self.mrr.power_eo+self.mrr.power_to) + \
+                        laser_power*self.wall_plug_efficiency 
 
             elif vdp.vdp_type == 'MAM':
                 no_of_adc = elements_count*element_size
@@ -234,28 +301,58 @@ class Metrics:
             # fc_height = 3 * pitch + N_FC * (radius + pitch)
             # fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
             mrr_area = (3.14*(radius**2)*1e-6)
-
-            cnn_vdp_unit_area = mrr_area*(2*N)*M
-
             splitter_area = M * splitter
 
             pd_area = (M) * pd
 
-            adc_area = M * (2*N) * adc
-
+            adc_area = M * (N) * adc
             if acc_type == 'STOCHASTIC':
+                cnn_vdp_unit_area = mrr_area*(2*N)*M
                 serializer_area = M * (N) * serializer
                 serializer_area_fc = M_FC * N_FC * serializer
+                dac_area = M * (2*N) * dac
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + serializer_area)
-
+                total_area = total_cnn_units_area + S_A_area + \
+                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            elif acc_type == 'ROBIN':
+                mrr_area_div = (3.14*(1.5**2)*1e-6)
+                cnn_vdp_unit_area = (mrr_area*N+mrr_area_div*N)*M
+                dac_area = M * (2*N) * dac
+                total_cnn_units_area = X * \
+                    (cnn_vdp_unit_area + pd_area +
+                     splitter_area + adc_area + dac_area)
+                total_area = total_cnn_units_area + S_A_area + \
+                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            elif acc_type == 'ONNA':
+                cnn_vdp_unit_area = (mrr_area*N)*M
+                dac_area = M * (N) * dac
+                total_cnn_units_area = X * \
+                    (cnn_vdp_unit_area + pd_area +
+                     splitter_area + adc_area + dac_area)
+                total_area = total_cnn_units_area + S_A_area + \
+                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            elif acc_type == 'LIGHTBULB':
+                mrr_area = 8.03*1e-6
+                cnn_vdp_unit_area = (mrr_area*3*N)*M
+                dac_area = M * (3*N) * dac
+                
+                total_cnn_units_area = X * \
+                    (cnn_vdp_unit_area + pd_area +
+                     splitter_area + adc_area + dac_area)
+                S_A_area = 0.0364 + 0.16 # * Pshifter +Padder
+                eDram_area = 0.0143 # * pRacetrack Memory
+                total_area = total_cnn_units_area +  + \
+                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
             else:
                 dac_area = M * (N) * dac
                 dac_area_fc = M_FC * N_FC * dac
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + dac_area)
+                total_area = total_cnn_units_area + S_A_area + \
+                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
             # print('N', N)
             # print('M', M)
             # print('total_cnn_units_area', total_cnn_units_area)
@@ -266,8 +363,7 @@ class Metrics:
             # print('bus', bus)
             # print('max_pool_area', max_pool_area)
             # print('io_interface', io_interface)
-            total_area = total_cnn_units_area + S_A_area + \
-                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            
 
             return total_area
 

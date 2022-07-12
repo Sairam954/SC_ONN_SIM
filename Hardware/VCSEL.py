@@ -1,9 +1,9 @@
-class TIA:
-    
+
+class VCSEL:
     def __init__(self):
         self.no_of_parallel_requests = 1
-        self.power = 7.2e-3 # * taken from excel scheet 
-        self.energy = 0.21e-12
+        self.power = 0.66e-3 # * from paper Efficient Hybrid Integration of Long Wavelength VCSELs on Silicon Photonic Circuits
+        self.energy = 13.2e-12
         self.latency = None  # todo find the latency of the TIA element 
         self.area = None
         self.request_queue = None

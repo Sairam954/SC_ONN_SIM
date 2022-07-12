@@ -65,7 +65,8 @@ pitch = 5E-6
 vdp_units = []
 # * ADC area and power changes with BR {BR: {area: , power: }}}
 adc_area_power = {5: {AREA: 0.103, POWER: 29},
-                  0.12: {AREA: 0.002, POWER: 2.55}}
+                  0.12: {AREA: 0.002, POWER: 2.55},
+                  50:{AREA:0.00017, POWER: 0.2}}
 dac_area_power = {5: {AREA: 0.06, POWER: 26},
                   0.12: {AREA: 0.06, POWER: 26}}
 
