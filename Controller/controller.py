@@ -42,9 +42,10 @@ class Controller:
         while clock>=0:
             vdp_no = 0
             for vdp in accelerator.vdp_units_list:
+                # print('VDP Number ', vdp_no)
                 # print("VDP End Time: ", vdp.end_time)
                 # print(" Supported Layers ",vdp.layer_supported)
-                if vdp.end_time <= clock and vdp.does_support_layer("convolution"):
+                if vdp.end_time <= clock:
                     # print("VDP unit Available Vdp No ", vdp_no)
                     vdp.start_time = clock
                     vdp.end_time = clock+vdp.latency
@@ -86,8 +87,9 @@ class Controller:
             if completed_layer:
                 break
             cycle+=1
-        
+            print('partial cycle', cycle)
             clock=clock+clock_increment  
+            print('Clock', clock)
         return clock,accelerator
     def  get_convolution_latency(self, accelerator, convolutions, kernel_size):
         """[  Function has to give the latency taken by the given accelerator to perform stated counvolutions with mentioned kernel size
@@ -112,6 +114,9 @@ class Controller:
         IDLE_RINGS = "idle_rings"
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
+        # print('Convolutions to be completed ', convolutions)
+        # print('Clock Increment', clock_increment)
+        # return 
         # if accelerator.is_hybrid:
         #     clock_increment = abs(accelerator.vdp_units_list[ZERO].latency- accelerator.vdp_units_list[LAST].latency)
         # print("Is Hybrid :", accelerator.is_hybrid)
@@ -126,8 +131,10 @@ class Controller:
             accelerator.pheripherals[ADDER].controller(clock)
             for vdp in accelerator.vdp_units_list:
                 # print("VDP End Time: ", vdp.end_time)
-                
-                if vdp.end_time <= clock and vdp.does_support_layer("convolution"):
+                # print('VDP Number ', vdp_no)
+                # print('Clock ', clock)s
+                # print('Vdpe end time', vdp.end_time)
+                if vdp.end_time <= clock:
                     # print("VDP unit Available Vdp No ", vdp_no)
                     vdp.start_time = clock
                     vdp.end_time = clock+vdp.latency
@@ -159,7 +166,7 @@ class Controller:
                         decomposed_kernel_count = math.ceil(kernel_size/decomposed_kernel_size)
                         # print("Decomposed Kernel Count ",decomposed_kernel_count)
                         element_convo_count = vdpelement.perform_convo_count(decomposed_kernel_size)
-                        # print("Element Convolution Count ",element_convo_count)
+                        # print("VDPE Convolution Count ", element_convo_count)
                         vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
                         # print("VDP Convolution Count",vdp_convo_count)
                         # * one use case that was missed while performing this logic was what to do when a single convolution can not be performed 
@@ -168,9 +175,11 @@ class Controller:
                         # * First calculate the number of partial convo   
                         if vdp_convo_count == 0:
                             # * need to distribute the convolution on to various vdp units as single vdp cannot perform 
+                            # print('DKV distrubted across various VDPEs')
                             partial_convolutions = decomposed_kernel_count
                             vdp.end_time = clock # * this is to make this vdp unit also available for operation
-                            clock,accelerator = self.get_partial_convolution_latency(clock,clock_increment,accelerator,partial_convolutions,decomposed_kernel_size)
+                            clock, accelerator = self.get_partial_convolution_latency(clock,clock_increment,accelerator,partial_convolutions,decomposed_kernel_size)
+
                             vdp_convo_count = 1 # * since we are calculating the time taken to perform partial convo count of single convo
                             # * Substract this vdp utilization as they are already taken care in partial convolution latency calculation
                             vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,decomposed_kernel_size,vdpelement.element_size)
@@ -185,7 +194,6 @@ class Controller:
                         # * Sceduling of partial sum request and updating convolution latency 
                         partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
                         vdp.end_time = vdp.end_time + partial_sum_latency
-                         
                     if convolutions <= 0:
                         completed_layer=True
                         # print("************Convolutions Completed****************",convolutions)
@@ -200,15 +208,17 @@ class Controller:
                 if completed_layer:
                     break
                 vdp_no += 1
-            # print("Convolutions Left :", convolutions)
+            print("Convolutions Left :", convolutions)
            
             if completed_layer:
                 break
             cycle+=1
         
             clock=clock+clock_increment
-            
+        # print('Conv Latency', clock)
+        # print('PSum Latency', accelerator.pheripherals[ADDER].get_waiting_list_latency())   
         clock = clock + accelerator.pheripherals[ADDER].get_waiting_list_latency()
+        # print('Clock', clock)
         accelerator.pheripherals[ADDER].reset()
         return clock 
     #* the below method is not need in version 2
@@ -281,6 +291,7 @@ class Controller:
             
         clock = clock + accelerator.pheripherals[ADDER].get_waiting_list_latency()
         accelerator.pheripherals[ADDER].reset()
-        # print(clock)
+        print('Latency', clock)
+        print('Cycle', cycle)
         return clock
     

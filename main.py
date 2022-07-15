@@ -68,7 +68,9 @@ adc_area_power = {5: {AREA: 0.103, POWER: 29},
                   0.12: {AREA: 0.002, POWER: 2.55},
                   50:{AREA:0.00017, POWER: 0.2}}
 dac_area_power = {5: {AREA: 0.06, POWER: 26},
-                  0.12: {AREA: 0.06, POWER: 26}}
+                  0.12: {AREA: 0.06, POWER: 26},
+                  50: {AREA: 0.06, POWER: 26}
+                  }
 
 
 def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
@@ -85,8 +87,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
     accelerator = Accelerator()
     adder = Adder()
     pool = Pool()
-    accelerator.add_pheripheral(ADDER, adder)
-    accelerator.add_pheripheral(POOL, pool)
+    
 
     controller = Controller()
     metrics = Metrics()
@@ -96,6 +97,12 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         vdp_type = vdp_config[VDP_TYPE]
         accelerator.set_vdp_type(vdp_type)
         accelerator.set_acc_type(vdp_config.get(ACC_TYPE))
+        
+        # * Peripheral Parameters assigning
+        adder.latency = (1/vdp_config.get(BITRATE))*1e-9
+        accelerator.add_pheripheral(ADDER, adder)
+        
+        accelerator.add_pheripheral(POOL, pool)
         for vdp_no in range(vdp_config.get(UNITS_COUNT)):
             if vdp_config.get(ACC_TYPE) == 'STOCHASTIC':
                 vdp = Stocastic_MRRVDP(ring_radius, pitch, vdp_type, vdp_config.get(
@@ -161,6 +168,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         else:
             required_precision_multiplier = 1
         no_of_vdp_ops = no_of_vdp_ops*required_precision_multiplier
+        print('No Of VDP Ops', no_of_vdp_ops)
         # * Latency Calculation of the VDP operations
         layer_latency = 0
         # * Handles pooling layers and sends the requests to pooling unit
@@ -176,17 +184,19 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             if True:
                 # print("MAM type architecture ")
                 vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
-                # print("Total VDP Ops ", no_of_vdp_ops)
+                # print("Total tensor_count Ops ", tensor_count)
                 # print("VDP per Tensor ", vdp_per_tensor)
-                # print("Tensor Count ", tensor_count)
+                print("Tensor Count ", tensor_count)
                 for tensor in range(0, tensor_count):
                     layer_latency += controller.get_convolution_latency(
                         accelerator, vdp_per_tensor, vdp_size)
+                    # print('Tensor', tensor)
                     accelerator.reset()
                     # print("Layer latency", layer_latency)
             else:
                 layer_latency = controller.get_convolution_latency(
                     accelerator, no_of_vdp_ops, vdp_size)
+            print('Layer Latency ',layer_latency)
         total_latency.append(layer_latency)
         vdp_ops.append(no_of_vdp_ops)
         vdp_sizes.append(vdp_size)
@@ -206,7 +216,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
     for accelearator_config in run_config:
         # * Set the values of ADC and DAC area and power values based on the Bit rate
-        if accelearator_config[ACC_TYPE] == 'ANALOG':
+        if accelearator_config[ACC_TYPE] != 'STOCHASTIC':
             running_br = accelearator_config[BITRATE]
             metrics.adc.area = adc_area_power[running_br][AREA]
             metrics.adc.power = adc_area_power[running_br][POWER]
@@ -221,7 +231,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             metrics.dac.power = dac_area_power[running_br][POWER]
         # get_total_area(TYPE, X, Y, N, M, N_FC, M_FC):
         area += metrics.get_total_area(vdp_type, accelearator_config[UNITS_COUNT], 0, accelearator_config[ELEMENT_SIZE],
-                                       accelearator_config[ELEMENT_COUNT], 0, 0, accelearator_config[RECONFIG])
+                                       accelearator_config[ELEMENT_COUNT], 0, 0, accelearator_config[RECONFIG],accelearator_config[ACC_TYPE])
         print("Area_pre", area)
     fps_per_w_area = fps_per_w/area
     # print("Area :", area)
@@ -248,21 +258,21 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
   # * Creating accelerator with the configurations
 
 
-accelerator_required_precision = 8
-STOCHASTIC_ACCELERATOR = [{ELEMENT_SIZE: 176, ELEMENT_COUNT: 176, UNITS_COUNT: 512, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'SCONNA', ACC_TYPE:'STOCHASTIC', PRECISION:8, BITRATE: 30}]
-ANALOG_AMM_ACCELERATOR = [{ELEMENT_SIZE: 31, ELEMENT_COUNT: 31, UNITS_COUNT: 3971, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'ANALOG_AMM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
-ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
-], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
+accelerator_required_precision = 1
 
+ROBIN_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1, RECONFIG: [
+], VDP_TYPE:'AMM', NAME:'ROBIN', ACC_TYPE:'ROBIN', PRECISION:1, BITRATE: 50}]
+# ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
+# ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
+LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
+], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
 
-tpc_list = [ANALOG_MAM_ACCELERATOR]
+tpc_list = [ROBIN_ACCELERATOR]
 print("Required Precision ", accelerator_required_precision)
-cnnModelDirectory = "./CNNModels/"
+cnnModelDirectory = "./CNNModels/Sample/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
-modelList = ['MobileNet_V2.csv']
+# modelList = ['MobileNet_V2.csv']
 system_level_results = []
 for tpc in tpc_list:
     for modelName in modelList:
@@ -270,7 +280,7 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/ICCAD/'+'MAM_MobileNet_V2.csv')
+sys_level_results_df.to_csv('Result/VLSID/'+'ROBIN_MobileNet_V2.csv')
 
 
 # #* set clock increment time as the vdp latency time for uniform vdp accelerator
@@ -281,3 +291,10 @@ sys_level_results_df.to_csv('Result/ICCAD/'+'MAM_MobileNet_V2.csv')
 
 # # todo 1: Fix the logging part 2: Add visualization code   2. Add pooling layer energy calculation
 # # todo 7. Add thermal tunning lateny to total latency
+
+# * FPS -  18747656.542931136 
+# Cycle 3276
+# Clock 6.676000000000237e-08
+# Clock Increment 2e-11
+# Clock 6.676000000000237e-08
+# Layer Latency  6.676000000000237e-08

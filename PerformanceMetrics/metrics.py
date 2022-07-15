@@ -214,7 +214,7 @@ class Metrics:
             pheripheral_power_params['activation'] = self.activation.power
             total_power += self.io_interface.power + self.activation.power + \
                 self.router.power + self.bus.power + vdp_power + self.eDram.power
-            # print("Pheripheral Power ", pheripheral_power_params)
+            print("Total Power ", total_power)
         return total_power
 
     def get_total_area(self, TYPE, X, Y, N, M, N_FC, M_FC, reconfig_list=[], acc_type='ANALOG'):
@@ -306,6 +306,7 @@ class Metrics:
             pd_area = (M) * pd
 
             adc_area = M * (N) * adc
+            
             if acc_type == 'STOCHASTIC':
                 cnn_vdp_unit_area = mrr_area*(2*N)*M
                 serializer_area = M * (N) * serializer
@@ -325,6 +326,7 @@ class Metrics:
                      splitter_area + adc_area + dac_area)
                 total_area = total_cnn_units_area + S_A_area + \
                 eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+                
             elif acc_type == 'ONNA':
                 cnn_vdp_unit_area = (mrr_area*N)*M
                 dac_area = M * (N) * dac
@@ -337,7 +339,6 @@ class Metrics:
                 mrr_area = 8.03*1e-6
                 cnn_vdp_unit_area = (mrr_area*3*N)*M
                 dac_area = M * (3*N) * dac
-                
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + dac_area)
@@ -348,6 +349,7 @@ class Metrics:
             else:
                 dac_area = M * (N) * dac
                 dac_area_fc = M_FC * N_FC * dac
+                cnn_vdp_unit_area = mrr_area*(2*N)*M
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + dac_area)
