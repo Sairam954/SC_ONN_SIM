@@ -87,9 +87,9 @@ class Controller:
             if completed_layer:
                 break
             cycle+=1
-            print('partial cycle', cycle)
+            # print('partial cycle', cycle)
             clock=clock+clock_increment  
-            print('Clock', clock)
+            # print('Clock', clock)
         return clock,accelerator
     def  get_convolution_latency(self, accelerator, convolutions, kernel_size):
         """[  Function has to give the latency taken by the given accelerator to perform stated counvolutions with mentioned kernel size
@@ -112,6 +112,7 @@ class Controller:
         ADDER = "adder"
         UTILIZED_RINGS = "utilized_rings"
         IDLE_RINGS = "idle_rings"
+        PCA_DKV_LIMIT = 14
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
         # print('Convolutions to be completed ', convolutions)
@@ -192,7 +193,18 @@ class Controller:
                         # print("Idle Rings :",self.idle_rings)
                         convolutions = convolutions-vdp_convo_count
                         # * Sceduling of partial sum request and updating convolution latency 
-                        partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
+                        if accelerator.acc_type != 'ONNA':
+                            partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
+                        else: 
+                            required_precision = 20
+                            # print('Decomposed Kernel ', decomposed_kernel_count)
+                            # print('Batch of VDPs accumulated ', math.floor(decomposed_kernel_count/(PCA_DKV_LIMIT*(2**required_precision))) )
+                            if (math.floor(decomposed_kernel_count/PCA_DKV_LIMIT))>1:
+                                partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(math.floor(decomposed_kernel_count/PCA_DKV_LIMIT))
+                                # print('Partial Sum Latency',partial_sum_latency)
+                            else:
+                                partial_sum_latency = 0 
+                                # print('Partial Sum Latency',partial_sum_latency)
                         vdp.end_time = vdp.end_time + partial_sum_latency
                     if convolutions <= 0:
                         completed_layer=True
@@ -208,7 +220,7 @@ class Controller:
                 if completed_layer:
                     break
                 vdp_no += 1
-            print("Convolutions Left :", convolutions)
+            # print("Convolutions Left :", convolutions)
            
             if completed_layer:
                 break
@@ -291,7 +303,7 @@ class Controller:
             
         clock = clock + accelerator.pheripherals[ADDER].get_waiting_list_latency()
         accelerator.pheripherals[ADDER].reset()
-        print('Latency', clock)
-        print('Cycle', cycle)
+        # print('Latency', clock)
+        # print('Cycle', cycle)
         return clock
     

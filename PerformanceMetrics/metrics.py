@@ -146,11 +146,11 @@ class Metrics:
                         laser_power*self.wall_plug_efficiency + no_of_VCSEL*self.vcsel.power
                 elif accelerator.acc_type == 'ONNA':
                     no_of_adc = elements_count*element_size
-                    no_of_dac = 2*elements_count*element_size
+                    no_of_dac = elements_count*element_size
                     no_of_pd = elements_count
                     no_of_tia = elements_count
                     no_of_VCSEL = elements_count
-                    no_of_mrr = 2*elements_count*element_size+element_size
+                    no_of_mrr = elements_count*element_size+element_size
                     laser_power = self.laser_power_per_wavelength*elements_count*element_size
                     power_params = {}
                     power_params['adc'] = no_of_adc*self.adc.power
@@ -324,17 +324,23 @@ class Metrics:
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + dac_area)
+                print('CNN Area', cnn_vdp_unit_area)
+                print( S_A_area + eDram_area + sigmoid + router + bus + max_pool_area+io_interface)
                 total_area = total_cnn_units_area + S_A_area + \
                 eDram_area + sigmoid + router + bus + max_pool_area+io_interface
-                
+                print('Total Area', total_area)
             elif acc_type == 'ONNA':
+                print('acc_type', acc_type)
                 cnn_vdp_unit_area = (mrr_area*N)*M
                 dac_area = M * (N) * dac
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
                      splitter_area + adc_area + dac_area)
+                print('CNN Area', cnn_vdp_unit_area)
+                print( S_A_area + eDram_area + sigmoid + router + bus + max_pool_area+io_interface)
                 total_area = total_cnn_units_area + S_A_area + \
                 eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+                print('Total Area', total_area)
             elif acc_type == 'LIGHTBULB':
                 mrr_area = 8.03*1e-6
                 cnn_vdp_unit_area = (mrr_area*3*N)*M
@@ -344,8 +350,11 @@ class Metrics:
                      splitter_area + adc_area + dac_area)
                 S_A_area = 0.0364 + 0.16 # * Pshifter +Padder
                 eDram_area = 0.0143 # * pRacetrack Memory
+                print('CNN Area', cnn_vdp_unit_area)
+                print( eDram_area + sigmoid + router + bus + max_pool_area+io_interface)
                 total_area = total_cnn_units_area +  + \
                 eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+                print('Total Area', total_area)
             else:
                 dac_area = M * (N) * dac
                 dac_area_fc = M_FC * N_FC * dac
