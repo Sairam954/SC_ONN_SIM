@@ -32,6 +32,7 @@ class MRRVDP(VDP):
         self.end_time = 0
         self.vdp_element_list = []
         self.eo_tuning_latency = 1e-9
+        self.to_tuning_latency = 10e-9
         self.tia_latency = 0.15e-9
         self.pd_latency = 5.8e-9
         self.pheripheral_latency = 4.68e-9

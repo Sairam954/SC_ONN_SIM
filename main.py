@@ -65,16 +65,19 @@ pitch = 5E-6
 vdp_units = []
 # * ADC area and power changes with BR {BR: {area: , power: }}}
 adc_area_power = { 
-    3.6: {AREA: 0.025, POWER: 12.5},
-    5: {AREA: 0.103, POWER: 29},
-                  1: {AREA: 0.014, POWER: 10.4},
-                  50:{AREA:0.00017, POWER: 0.2}}
-dac_area_power = {3.6: {AREA: 0.025, POWER: 12.5},
+    0.008: {AREA: 0.04, POWER: 14.3},
+    0.112: {AREA: 0.0594, POWER: 24.1},
+    5.000: {AREA: 0.103, POWER: 29},
+                  1.000: {AREA: 0.014, POWER: 10.4},
+                  50.000:{AREA:0.00017, POWER: 0.2}}
+dac_area_power = {
+   0.008: {AREA: 0.04, POWER: 14.3},
+    0.112: {AREA: 0.06, POWER: 26},
     5: {AREA: 0.06, POWER: 26},
-                  1: {AREA: 0.06, POWER: 26},
-                  50: {AREA: 0.06, POWER: 26}
+    1: {AREA: 0.06, POWER: 26},
+    50: {AREA: 0.06, POWER: 26}
                   }
-PCA_ACC_Count = 14
+PCA_ACC_Count = 1
 
 def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
@@ -162,7 +165,10 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         # * VDP size and Number of VDP operations per layer
         vdp_size = kernel_height*kernel_width*kernel_depth
         no_of_vdp_ops = output_height*output_depth*output_width
-
+       
+        
+        
+        
         # * Estimate the additional vdp operations to achieve the required precision in Analog Accelerators
         available_precision = accelerator.vdp_units_list[ZERO].vdp_element_list[ZERO].precision
         if available_precision < required_precision:
@@ -171,6 +177,12 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         else:
             required_precision_multiplier = 1
         no_of_vdp_ops = no_of_vdp_ops*required_precision_multiplier
+         
+        # * In Photonic VDPEs the weights are stationary and are operated using thermo optic tuning 
+        # * When weights ae stationary the inputs are streamed in and a particular set of weights are used output height times output weight, the weights can be mapped frontal or lateral 
+        
+      
+        
         # print('No Of VDP Ops', no_of_vdp_ops)
         # * Latency Calculation of the VDP operations
         layer_latency = 0
@@ -187,6 +199,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             if True:
                 # print("MAM type architecture ")
                 vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
+                
+                
                 # print("Total tensor_count Ops ", tensor_count)
                 # print("VDP per Tensor ", vdp_per_tensor)
                 # print("Tensor Count ", tensor_count)
@@ -228,10 +242,10 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         else:
             running_br = accelearator_config[BITRATE]
             # running_br = round(running_br, 2)
-            metrics.adc.area = adc_area_power[round(running_br/PCA_ACC_Count,1)][AREA]
-            metrics.adc.power = adc_area_power[round(running_br/PCA_ACC_Count,1)][POWER]
-            metrics.dac.area = dac_area_power[round(running_br/PCA_ACC_Count,1)][AREA]
-            metrics.dac.power = dac_area_power[round(running_br/PCA_ACC_Count,1)][POWER]
+            metrics.adc.area = adc_area_power[round(running_br/PCA_ACC_Count,3)][AREA]
+            metrics.adc.power = adc_area_power[round(running_br/PCA_ACC_Count,3)][POWER]
+            metrics.dac.area = dac_area_power[round(running_br/PCA_ACC_Count,3)][AREA]
+            metrics.dac.power = dac_area_power[round(running_br/PCA_ACC_Count,3)][POWER]
         # get_total_area(TYPE, X, Y, N, M, N_FC, M_FC):
         area += metrics.get_total_area(vdp_type, accelearator_config[UNITS_COUNT], 0, accelearator_config[ELEMENT_SIZE],
                                        accelearator_config[ELEMENT_COUNT], 0, 0, accelearator_config[RECONFIG],accelearator_config[ACC_TYPE])
@@ -263,8 +277,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
 accelerator_required_precision = 1
 
-ACCELERATOR = [{ELEMENT_SIZE: 19, ELEMENT_COUNT: 19, UNITS_COUNT: 224, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'OXBNN_50', ACC_TYPE:'ONNA', PRECISION:1, BITRATE: 50}]
+ACCELERATOR = [{ELEMENT_SIZE: 31 , ELEMENT_COUNT:  31, UNITS_COUNT: 1, RECONFIG: [
+], VDP_TYPE:'AMM', NAME:'ROBIN_EO', ACC_TYPE:'ROBIN', PRECISION:1, BITRATE: 1}]
 # ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
 # ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
 LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
@@ -272,10 +286,10 @@ LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562,
 
 tpc_list = [ACCELERATOR]
 print("Required Precision ", accelerator_required_precision)
-cnnModelDirectory = "./CNNModels/"
+cnnModelDirectory = "./CNNModels/Sample/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
-modelList = ['MobileNet_V2.csv','ShuffleNet_V2.csv','ResNet18.csv', 'VGG-small.csv']
+# modelList = ['MobileNet_V2.csv','ShuffleNet_V2.csv','ResNet18.csv', 'VGG-small.csv']
 system_level_results = []
 for tpc in tpc_list:
     for modelName in modelList:
@@ -283,7 +297,7 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/VLSID/'+'OXBNN_50_ALL.csv')
+sys_level_results_df.to_csv('Result/GLSVLSI/'+'ROBIN_EO.csv')
 
 
 # #* set clock increment time as the vdp latency time for uniform vdp accelerator

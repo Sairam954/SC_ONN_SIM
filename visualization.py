@@ -40,8 +40,8 @@ def plotAndSaveBarplot(df, x_column, y_column, y_axis_label, hue_column, ncol, f
     ax1.xaxis.label.set_fontweight('bold')
     ax1.yaxis.label.set_fontweight('bold')
     # ax1.set_ylim([0, 7E-3]) # latency
-    # ax1.set_ylim([0, 9E-6]) # FPS/W
-    # ax1.set_ylim([0, 9E-12]) # FPS/W/mm2
+    # ax1.set_ylim([0, 1.3]) # FPS/W
+    ax1.set_ylim([0, 0.003]) # FPS/W/mm2
     t = ax1.yaxis.get_offset_text()
     t.set_x(-0.01)
     # t.set_y(0.05)
@@ -53,7 +53,7 @@ def plotAndSaveBarplot(df, x_column, y_column, y_axis_label, hue_column, ncol, f
     ax1.tick_params(axis='x', labelsize=15)
     sns.move_legend(
         ax1, "lower center",
-        bbox_to_anchor=(.5, 1.14), ncol=ncol, title=None, handletextpad=0.4, columnspacing=0.5, handlelength=1.7, prop={'weight': 'bold', 'size': '14'}, borderaxespad=0, framealpha=0)
+        bbox_to_anchor=(0.5, 1), ncol=ncol, title=None, handletextpad=0.4, columnspacing=0.5, handlelength=1.7, prop={'weight': 'bold', 'size': '14'}, borderaxespad=0, framealpha=0)
     # plt.xticks(rotation = 45)
     plt.rcParams.update({'font.family': 'Times New Roman'})
     plt.savefig(fig_save_dir+file_name, bbox_inches='tight')
@@ -87,28 +87,30 @@ acc_precision = 'ACC_SIXTEEN_BIT'
 # df =  pd.concat([df1, df2, df3], ignore_index=True)
 # df.to_csv('Result/'+acc_precision+'/Combined.csv')
 
-df = pd.read_csv('Result/ICCAD/SCH_ALL.csv')
-cal_gmean_col = ['fps']
-df = calGmeanDF(df, cal_gmean_col)
+df = pd.read_csv('Result/DAC/StochasticMultiplierSystemLevelAnalysis.csv')
 df = df.drop(df[df['Model_Name'] == 'VGG16'].index)
 df = df.drop(df[df['Model_Name'] == 'DenseNet121'].index)
+df = df.drop(df[df['Accelerator_Type'] == 'ATRIA'].index)
+cal_gmean_col = ['fps_per_w_per_area']
+df = calGmeanDF(df, cal_gmean_col)
+
 
 # * Metrics to be plotted and saved as seperate figures in for dic with {'metric_column_name': 'Y axis label'}
-# parameters_label= {'fps':"FPS (Log Scale)", 'fps_per_w_per_area':'$FPS/W/mm^2$' ,"fps_per_w":"FPS/W"}
-parameters_label = {'fps':"FPS (Log Scale)"}
+# parameters_label= {'fps':"FPS (log scale)", 'fps_per_w_per_area':'$FPS/W/mm^2$' ,"fps_per_w":"FPS/W"}
+parameters_label = {"fps_per_w_per_area":"$FPS/W/mm^2$"}
 # parameters_label= {}
 # * filters: column values to be removed from the plotting dataframe
 for metric in parameters_label:
     fileName = parameters_label[metric].replace(".csv", "").replace(
         " ", "_").replace("/", "_").replace("$", '_')+'.png'
     plotAndSaveBarplot(df, 'Model_Name', metric,
-                       parameters_label[metric], 'name', 5, fileName, 'Plots/ICCAD/')
+                       parameters_label[metric], 'name', 5, fileName, 'Plots/DAC/')
 
 # * The below code gives the descriptive information on which accelerator is better than other accelerators and by how much
 
 df_descriptive = df[df['Model_Name'] == 'Gmean'].reset_index(drop=True)
 print(df_descriptive)
-parameter_column = 'fps'
+parameter_column = 'fps_per_w_per_area'
 findmax_query = parameter_column+"=="+parameter_column+".max()"
 max_row = df_descriptive.query(findmax_query)
 print("Max Row", max_row)

@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,ANALOG_AMM,ResNet50.csv,"[{'element_size': 32, 'element_count': 128, 'units_count': 32, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'ANALOG_AMM', 'accelerator_type': 'ANALOG', 'precision': 4}]",100.0,0.0024289753669330645,411.6962294527695,96.39424552401715,29782.43109341184,0.005926451421571068,213.92479704,2.770343365319604e-05

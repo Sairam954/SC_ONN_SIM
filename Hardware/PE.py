@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC,abstractmethod
-class VDP(ABC):
+class PE(ABC):
     """[summary]
 
     Args:

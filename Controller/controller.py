@@ -91,7 +91,7 @@ class Controller:
             clock=clock+clock_increment  
             # print('Clock', clock)
         return clock,accelerator
-    def  get_convolution_latency(self, accelerator, convolutions, kernel_size):
+    def  get_convolution_latency(self, accelerator, convolutions, kernel_size, output_size):
         """[  Function has to give the latency taken by the given accelerator to perform stated counvolutions with mentioned kernel size
         ]
 
@@ -99,6 +99,7 @@ class Controller:
             accelerator ([Hardware.Accelerator]): [Accelerator for performing the convolutions]
             convolution_count ([type]): [No of convolutions to be performed by the accelerator]
             kernel_size ([type]): [size of the convolution]
+            output size: output height * output width, it is needed to know the count of convolution a single kernels performs
             
         Returns:
             [float]: [returns the latency required by the accelerator to perform all the convolutions]
@@ -112,7 +113,9 @@ class Controller:
         ADDER = "adder"
         UTILIZED_RINGS = "utilized_rings"
         IDLE_RINGS = "idle_rings"
+        
         PCA_DKV_LIMIT = 14
+        dataflow = 'temporal'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
         # print('Convolutions to be completed ', convolutions)
@@ -130,15 +133,22 @@ class Controller:
             vdp_no = 0
             partial_sum_list = []
             accelerator.pheripherals[ADDER].controller(clock)
+           
+            
             for vdp in accelerator.vdp_units_list:
                 # print("VDP End Time: ", vdp.end_time)
                 # print('VDP Number ', vdp_no)
                 # print('Clock ', clock)s
                 # print('Vdpe end time', vdp.end_time)
+                
                 if vdp.end_time <= clock:
                     # print("VDP unit Available Vdp No ", vdp_no)
                     vdp.start_time = clock
-                    vdp.end_time = clock+vdp.latency
+                    if dataflow == 'temporal':
+                    # ! To itegrate temporal dataflow, the idea is to change the end time of the vdp unit by the number of  dot product operation for that particular set of weights
+                        vdp.end_time = clock+vdp.latency*(output_size)+vdp.to_tuning_latency
+                    else:
+                        vdp.end_time = clock+vdp.latency
                     vdp.calls_count +=1
                     vdpelement = vdp.vdp_element_list[ZERO]
                     vdp_convo_count = 0
@@ -233,7 +243,7 @@ class Controller:
         # print('Clock', clock)
         accelerator.pheripherals[ADDER].reset()
         return clock 
-    #* the below method is not need in version 2
+    #* the below method is not needed in version 2
     def get_fully_connected_latency(self,accelerator, fully_connected_dp):
         
         ELEMENT_SIZE = 'element_size'
