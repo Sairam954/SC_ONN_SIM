@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,ANALOG_MAM,MobileNet_V2,"[{'element_size': 44, 'element_count': 44, 'units_count': 3172, 'reconfig': [], 'vdp_type': 'MAM', 'name': 'ANALOG_MAM', 'accelerator_type': 'ANALOG', 'precision': 4, 'bitrate': 5}]",70.71668982234686,0.0004037906250000014,2476.530999202858,35.93080822762313,113148518.31274232,2.1870236925600597e-05,1016465.627086276,2.1515963100781062e-11

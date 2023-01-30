@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,OXBNN,ResNet50,"[{'element_size': 10, 'element_count': 10, 'units_count': 1, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'OXBNN', 'accelerator_type': 'LIGHTBULB', 'precision': 1, 'bitrate': 50}]",100.0,5.995519999999829e-06,166791.2040990654,3.97473843255808,1.4571678930000003,0.25158832938855774,18.269089625,0.013771257055101219

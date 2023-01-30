@@ -258,8 +258,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
     return result
 
-  # * Creating accelerator with the configurations
-
+ 
+ # * GIVE CONFIGURATION FOR THE ACCELERATOR HERE
 
 accelerator_required_precision = 1
 
@@ -267,14 +267,16 @@ ACCELERATOR = [{ELEMENT_SIZE: 19, ELEMENT_COUNT: 19, UNITS_COUNT: 224, RECONFIG:
 ], VDP_TYPE:'AMM', NAME:'OXBNN_50', ACC_TYPE:'ONNA', PRECISION:1, BITRATE: 50}]
 # ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
 # ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
-LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
+# LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
+# ], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
 
 tpc_list = [ACCELERATOR]
 print("Required Precision ", accelerator_required_precision)
 cnnModelDirectory = "./CNNModels/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
+
+ # * TO RUN SPECIFIC MODELS USE THE BELOW LIST
 modelList = ['MobileNet_V2.csv','ShuffleNet_V2.csv','ResNet18.csv', 'VGG-small.csv']
 system_level_results = []
 for tpc in tpc_list:
@@ -283,21 +285,6 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/VLSID/'+'OXBNN_50_ALL.csv')
+sys_level_results_df.to_csv('Result/ISQLED/'+'OXBNN_50_ALL.csv')
 
 
-# #* set clock increment time as the vdp latency time for uniform vdp accelerator
-# clock_increment = accelerator.vdp_units_list[ZERO].latency
-
-# #* For Hybrid accelerator the clock increment is the difference between the largest vdp latency and the smallest vdp latency
-# #* vdp elements are sorted based on the element size during setup latency call
-
-# # todo 1: Fix the logging part 2: Add visualization code   2. Add pooling layer energy calculation
-# # todo 7. Add thermal tunning lateny to total latency
-
-# * FPS -  18747656.542931136 
-# Cycle 3276
-# Clock 6.676000000000237e-08
-# Clock Increment 2e-11
-# Clock 6.676000000000237e-08
-# Layer Latency  6.676000000000237e-08

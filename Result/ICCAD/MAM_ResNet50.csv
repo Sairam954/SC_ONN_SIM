@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,ANALOG_MAM,ResNet50,"[{'element_size': 44, 'element_count': 44, 'units_count': 3172, 'reconfig': [], 'vdp_type': 'MAM', 'name': 'ANALOG_MAM', 'accelerator_type': 'ANALOG', 'precision': 4, 'bitrate': 5}]",100.0,0.021506364759926313,46.497862896073485,726.9761230536571,113148518.31274232,4.108226658024297e-07,1016465.627086276,4.0416778969699455e-13

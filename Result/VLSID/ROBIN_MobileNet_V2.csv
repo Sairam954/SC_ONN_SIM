@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,ROBIN,ResNet50,"[{'element_size': 10, 'element_count': 10, 'units_count': 1, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'ROBIN', 'accelerator_type': 'ROBIN', 'precision': 1, 'bitrate': 50}]",100.0,5.504000000000007e-08,18168604.65116277,0.0381697412736,1.325327893,26.19871279030926,12.425617710000001,2.1084434916442683

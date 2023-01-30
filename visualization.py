@@ -2,7 +2,6 @@ from turtle import color, width
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
-from pandas.core.algorithms import mode
 import json
 import seaborn as sns
 from matplotlib import ticker
@@ -87,7 +86,7 @@ acc_precision = 'ACC_SIXTEEN_BIT'
 # df =  pd.concat([df1, df2, df3], ignore_index=True)
 # df.to_csv('Result/'+acc_precision+'/Combined.csv')
 
-df = pd.read_csv('Result/ICCAD/SCH_ALL.csv')
+df = pd.read_csv('Result/ISQED/Vis_Test.csv')
 cal_gmean_col = ['fps']
 df = calGmeanDF(df, cal_gmean_col)
 df = df.drop(df[df['Model_Name'] == 'VGG16'].index)
@@ -102,7 +101,7 @@ for metric in parameters_label:
     fileName = parameters_label[metric].replace(".csv", "").replace(
         " ", "_").replace("/", "_").replace("$", '_')+'.png'
     plotAndSaveBarplot(df, 'Model_Name', metric,
-                       parameters_label[metric], 'name', 5, fileName, 'Plots/ICCAD/')
+                       parameters_label[metric], 'name', 5, fileName, 'Plots/ISQED/')
 
 # * The below code gives the descriptive information on which accelerator is better than other accelerators and by how much
 
