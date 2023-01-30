@@ -1,3 +1,6 @@
+B_ONNSIM (BINARY Optical Neural Network Simulator)
+
+``` bash
 C:.
 │   .gitignore
 │   constants.py
@@ -87,3 +90,4 @@ C:.
 │           ROBIN_EO_All.csv
 │           ROBIN_PO_All.csv
 │           Vis_Test.csv
+...
