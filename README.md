@@ -46,7 +46,7 @@ C:.
 │           AcceleratorExceptions.cpython-310.pyc
 │           AcceleratorExceptions.cpython-38.pyc
 │
-├───Hardware - Different classes corresponding to th
+├───Hardware - Different classes corresponding to the accelerator
 │   │   Accelerator.py
 │   │   Accumulator_TIA.py
 │   │   Activation.py
