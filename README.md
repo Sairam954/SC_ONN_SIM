@@ -141,24 +141,24 @@ The below image shows SCONNA accelerator processing unit.
 ### Simulation Result CSV:
 After the simulations are completed, the results are stored in the form of a csv file containing information as shown below :
 
-![image](https://user-images.githubusercontent.com/23030293/215599495-6df0e14b-3bb4-4bd0-903d-8f9a3c619699.png)
+![image](https://user-images.githubusercontent.com/23030293/217608492-74183454-d00c-4ccd-863e-359491f6c367.png)
 
 The performance metrics are calculated by using PeformanceMetrics/metrics.py, currently it provides the above values. Users can change the file to reflect their accelerator components energy and power parameters.  
 
 ### Evaluation Visualization:
 The visualization.py can take the generated simulation csv and plot barplot for the results. It also prints useful information in the console about the top two accelerators. 
+![Result](https://user-images.githubusercontent.com/23030293/217608960-0cdc3c7e-abe6-4f8e-8ee9-6cab53dcdf8d.png)
 
 
 Simulation Results Analysis: 
 ```bash
-The accelerator OXBNN_50 achieves 4.158922762163461x times better fps than LIGHTBULB
-The accelerator OXBNN_50 achieves 8.384277528829282x times better fps than ROBIN_PO
-The accelerator OXBNN_50 achieves 2.547075858401049x times better fps than OXBNN_5
-The accelerator OXBNN_50 achieves 1.0x times better fps than OXBNN_50
+The accelerator SCONNA achieves 1.0x times better fps than SCONNA
+The accelerator SCONNA achieves 66.56219184599667x times better fps than MAM (HOLYLIGHT [6])
+The accelerator SCONNA achieves 146.4465119184254x times better fps than AMM (DEAPCNN [8])
 Details of second best accelerator
-The accelerator OXBNN_5 achieves 1.632822496607645x times better fps than LIGHTBULB
-The accelerator OXBNN_5 achieves 3.29172666812232x times better fps than ROBIN_PO
-The accelerator OXBNN_5 achieves 1.0x times better fps than OXBNN_5
+The accelerator MAM (HOLYLIGHT [6]) achieves 1.0x times better fps than MAM (HOLYLIGHT [6])
+The accelerator MAM (HOLYLIGHT [6]) achieves 2.200145575993879x times better fps than AMM (DEAPCNN [8])
+
 
 ```
 
