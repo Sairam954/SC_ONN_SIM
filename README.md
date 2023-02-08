@@ -19,7 +19,7 @@ Please cite us if you use SC_ONN_SIM
   title =        {SCONNA: A Stochastic Computing Based Optical
 Accelerator for Ultra-Fast, Energy-Efficient
 Inference of Integer-Quantized CNNs},
-  booktitle =    {2023 International Parallel and Distributed Processing Symposium (IPSDPS)}, 
+  booktitle =    {2023 International Parallel and Distributed Processing Symposium (IPDPS)}, 
   year =         {2023},
   volume =       {},
   number =       {},
