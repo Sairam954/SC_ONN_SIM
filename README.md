@@ -6,7 +6,7 @@ This is a transaction-level, event-driven python-based simulator for evaluation 
 
 ### Installation and Execution
 
-    git clone https://github.com/Sairam954/B_ONN_SIM.git
+    git clone https://github.com/Sairam954/SC_ONN_SIM.git
     python main.py
 
 ### Bibtex
