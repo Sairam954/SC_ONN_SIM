@@ -107,13 +107,11 @@ The below image shows SCONNA accelerator processing unit.
 │   │   DAC.py
 │   │   eDram.py
 │   │   io_interface.py
-│   │   LightBulbVDP.py
 │   │   MRR.py
 │   │   MRRVDP.py
 │   │   PD.py
 │   │   Pheripheral.py
 │   │   Pool.py
-│   │   RobinVDP.py
 │   │   router.py
 │   │   Serializer.py
 │   │   stochastic_MRRVDP.py
