@@ -28,7 +28,7 @@ Inference of Integer-Quantized CNNs},
 ```
 
 ### Video Tutorial
-
+https://www.youtube.com/watch?v=X6yifdEB7xU
 
 ### Accelerator Configuration 
 
