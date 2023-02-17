@@ -4,6 +4,11 @@
 
 This is a transaction-level, event-driven python-based simulator for evaluation of stochastic computing based optical neural network accelerators for various quantized Convolutional Neural Network models.  
 
+### ArXiv Preprint
+https://arxiv.org/abs/2302.07036
+
+
+
 ### Installation and Execution
 
     git clone https://github.com/Sairam954/SC_ONN_SIM.git
@@ -14,17 +19,17 @@ This is a transaction-level, event-driven python-based simulator for evaluation 
 Please cite us if you use SC_ONN_SIM
 
 ```bash
-@INPROCEEDINGS{SairamIPDPS2023,
-  author =       {Sairam Sri Vatsavai, Venkata Sai Praneeth Karempudi, and Ishan Thakkar},
-  title =        {SCONNA: A Stochastic Computing Based Optical
-Accelerator for Ultra-Fast, Energy-Efficient
-Inference of Integer-Quantized CNNs},
-  booktitle =    {2023 International Parallel and Distributed Processing Symposium (IPDPS)}, 
-  year =         {2023},
-  volume =       {},
-  number =       {},
-  pages =        {},
+@misc{https://doi.org/10.48550/arxiv.2302.07036,
+  doi = {10.48550/ARXIV.2302.07036},
+  url = {https://arxiv.org/abs/2302.07036},
+  author = {Vatsavai, Sairam Sri and Karempudi, Venkata Sai Praneeth and Thakkar, Ishan and Salehi, Ahmad and Hastings, Todd},
+  keywords = {Hardware Architecture (cs.AR), Artificial Intelligence (cs.AI), Emerging Technologies (cs.ET), Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {SCONNA: A Stochastic Computing Based Optical Accelerator for Ultra-Fast, Energy-Efficient Inference of Integer-Quantized CNNs},
+  publisher = {arXiv},
+  year = {2023},
+  copyright = {Creative Commons Attribution 4.0 International}
 }
+
 ```
 
 ### Video Tutorial
