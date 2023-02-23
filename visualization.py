@@ -31,7 +31,7 @@ def plotAndSaveBarplot(df, x_column, y_column, y_axis_label, hue_column, ncol, f
     y1lim = df1[y_column].max()
     # ax.set_ylim(0,100)
     if y_column == "fps_per_w_per_area" or y_column == "fps_per_w" or y_column == "total_latency":
-        ax1.ticklabel_format(axis='y', style='sci',  scilimits=(3, 6))
+        ax1.ticklabel_format(axis='y', style='sci',  scilimits=(2, 6))
     else:
         ax1.set_yscale("log")
     ax1.xaxis.label.set_visible(False)
@@ -87,30 +87,30 @@ acc_precision = 'ACC_SIXTEEN_BIT'
 # df =  pd.concat([df1, df2, df3], ignore_index=True)
 # df.to_csv('Result/'+acc_precision+'/Combined.csv')
 
-df = pd.read_csv('Result/DAC/StochasticMultiplierSystemLevelAnalysis.csv')
-df = df.drop(df[df['Model_Name'] == 'VGG16'].index)
-df = df.drop(df[df['Model_Name'] == 'DenseNet121'].index)
-df = df.drop(df[df['Accelerator_Type'] == 'ATRIA'].index)
-cal_gmean_col = ['fps_per_w_per_area']
+df = pd.read_csv('Result/GLSVLSI/ALL.csv')
+# df = df.drop(df[df['Model_Name'] == 'VGG16'].index)
+# df = df.drop(df[df['Model_Name'] == 'DenseNet121'].index)
+# df = df.drop(df[df['Accelerator_Type'] == 'ATRIA'].index)
+cal_gmean_col = ['fps_per_w']
 df = calGmeanDF(df, cal_gmean_col)
 
 
 # * Metrics to be plotted and saved as seperate figures in for dic with {'metric_column_name': 'Y axis label'}
 # parameters_label= {'fps':"FPS (log scale)", 'fps_per_w_per_area':'$FPS/W/mm^2$' ,"fps_per_w":"FPS/W"}
-parameters_label = {"fps_per_w_per_area":"$FPS/W/mm^2$"}
+parameters_label = {"fps_per_w":"FPS/W"}
 # parameters_label= {}
 # * filters: column values to be removed from the plotting dataframe
 for metric in parameters_label:
     fileName = parameters_label[metric].replace(".csv", "").replace(
         " ", "_").replace("/", "_").replace("$", '_')+'.png'
     plotAndSaveBarplot(df, 'Model_Name', metric,
-                       parameters_label[metric], 'name', 5, fileName, 'Plots/DAC/')
+                       parameters_label[metric], 'name', 5, fileName, 'Plots/GLSVLSI/')
 
 # * The below code gives the descriptive information on which accelerator is better than other accelerators and by how much
 
 df_descriptive = df[df['Model_Name'] == 'Gmean'].reset_index(drop=True)
 print(df_descriptive)
-parameter_column = 'fps_per_w_per_area'
+parameter_column = 'fps_per_w'
 findmax_query = parameter_column+"=="+parameter_column+".max()"
 max_row = df_descriptive.query(findmax_query)
 print("Max Row", max_row)

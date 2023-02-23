@@ -214,10 +214,10 @@ class Metrics:
             pheripheral_power_params['activation'] = self.activation.power
             total_power += self.io_interface.power + self.activation.power + \
                 self.router.power + self.bus.power + vdp_power + self.eDram.power
-            print("Total Power ", total_power)
+            # print("Total Power ", total_power)
         return total_power
 
-    def get_total_area(self, TYPE, X, Y, N, M, N_FC, M_FC, reconfig_list=[], acc_type='ANALOG'):
+    def get_total_area(self, TYPE, X, N, M, reconfig_list=[], acc_type='ANALOG'):
         pitch = 5  # um
         radius = 4.55  # um
         S_A_area = 0.00003  # mm2
@@ -263,7 +263,7 @@ class Metrics:
 
             adc_area = M * (N+1) * adc
 
-            dac_area = M * (N) * dac
+            dac_area = M * (N+1) * dac
 
             total_cnn_units_area = X * \
                 (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
@@ -302,7 +302,8 @@ class Metrics:
             # fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
             mrr_area = (3.14*(radius**2)*1e-6)
             splitter_area = M * splitter
-
+            print("M", M)
+            print("N", N)
             pd_area = (M) * pd
 
             adc_area = M * (N) * adc
@@ -310,7 +311,6 @@ class Metrics:
             if acc_type == 'STOCHASTIC':
                 cnn_vdp_unit_area = mrr_area*(2*N)*M
                 serializer_area = M * (N) * serializer
-                serializer_area_fc = M_FC * N_FC * serializer
                 dac_area = M * (2*N) * dac
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
@@ -356,8 +356,7 @@ class Metrics:
                 eDram_area + sigmoid + router + bus + max_pool_area+io_interface
                 print('Total Area', total_area)
             else:
-                dac_area = M * (N) * dac
-                dac_area_fc = M_FC * N_FC * dac
+                dac_area = M * (N*2) * dac
                 cnn_vdp_unit_area = mrr_area*(2*N)*M
                 total_cnn_units_area = X * \
                     (cnn_vdp_unit_area + pd_area +
@@ -379,35 +378,52 @@ class Metrics:
             return total_area
 
         elif TYPE == 'MMA':
-            premux = 0  # um
-            WDM = 0
-            preweight = 100
-            weightblk = 2 * (radius + pitch) + 30
-            width = premux + WDM + preweight + weightblk
-            height = M * (N*(radius + pitch)+pitch)
+            # premux = 0  # um
+            # WDM = 0
+            # preweight = 100
+            # weightblk = 2 * (radius + pitch) + 30
+            # width = premux + WDM + preweight + weightblk
+            # height = M * (N*(radius + pitch)+pitch)
 
-            cnn_vdp_unit_area = height * width * 1e-6  # mm2
-            fc_weightblk = 2 * (radius + pitch) + 30
-            fc_width = premux + WDM + preweight + fc_weightblk
-            fc_height = M_FC * (N_FC*(radius + pitch)+pitch)
-            fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
+            # cnn_vdp_unit_area = height * width * 1e-6  # mm2
+            # fc_weightblk = 2 * (radius + pitch) + 30
+            # fc_width = premux + WDM + preweight + fc_weightblk
+            # fc_height = M_FC * (N_FC*(radius + pitch)+pitch)
+            # fc_vdp_unit_area = fc_width * fc_height * 1e-6  # mm2
+            # splitter_area = M * splitter
+            # splitter_area_FC = 0
+            # pd_area = M * pd
+            # pd_area_fc = M_FC * pd
+            # adc_area = M * N * adc
+            # adc_area_fc = M_FC * N_FC * adc
+            # dac_area = M * N * dac * 2
+            # dac_area_fc = M_FC * N_FC * dac
+
+            # total_cnn_units_area = X * \
+            #     (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
+
+            # total_fc_units_area = Y * \
+            #     (fc_vdp_unit_area + pd_area_fc +
+            #      splitter_area_FC + adc_area_fc + dac_area_fc)
+
+            # total_area = total_cnn_units_area + total_fc_units_area + S_A_area + \
+            #     eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            mrr_area = (3.14*(radius**2)*1e-6)
             splitter_area = M * splitter
-            splitter_area_FC = 0
-            pd_area = M * pd
-            pd_area_fc = M_FC * pd
-            adc_area = M * N * adc
-            adc_area_fc = M_FC * N_FC * adc
-            dac_area = M * N * dac * 2
-            dac_area_fc = M_FC * N_FC * dac
 
+            pd_area = (M) * pd
+
+            adc_area = M * (N) * adc
+            print('acc_type', acc_type)
+            cnn_vdp_unit_area = (mrr_area*N)*M
+            dac_area = M * (N) * dac
             total_cnn_units_area = X * \
-                (cnn_vdp_unit_area + pd_area + splitter_area + adc_area + dac_area)
-
-            total_fc_units_area = Y * \
-                (fc_vdp_unit_area + pd_area_fc +
-                 splitter_area_FC + adc_area_fc + dac_area_fc)
-
-            total_area = total_cnn_units_area + total_fc_units_area + S_A_area + \
-                eDram_area + sigmoid + router + bus + max_pool_area+io_interface
-
+                (cnn_vdp_unit_area + pd_area +
+                    splitter_area + adc_area + dac_area)
+            print('CNN Area', cnn_vdp_unit_area)
+            print( S_A_area + eDram_area + sigmoid + router + bus + max_pool_area+io_interface)
+            total_area = total_cnn_units_area + S_A_area + \
+            eDram_area + sigmoid + router + bus + max_pool_area+io_interface
+            print('Total Area', total_area)
+            
             return total_area

@@ -17,8 +17,35 @@ from Exceptions.AcceleratorExceptions import VDPElementException
 from ast import Str
 import os.path
 import sys
+import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 
+
+def im2col(X,conv1, stride, pad):
+    # Padding
+    X_padded = np.pad(X, ((0,0), (0,0), (pad, pad), (pad, pad)), mode='constant')
+    X = X_padded
+    new_height = int((X.shape[2]+(2*pad)-(conv1.shape[2]))/stride)+1
+    new_width =  int((X.shape[3]+(2*pad)-(conv1.shape[3]))/stride)+1
+    im2col_vector = np.zeros((X.shape[1]*conv1.shape[2]*conv1.shape[3],new_width*new_height*X.shape[0]))
+    c = 0
+    for position in range(X.shape[0]):
+
+        image_position = X[position,:,:,:]
+        for height in range(0,image_position.shape[1],stride):
+            image_rectangle = image_position[:,height:height+conv1.shape[2],:]
+            if image_rectangle.shape[1]<conv1.shape[2]:
+                continue
+            else:
+                for width in range(0,image_rectangle.shape[2],stride):
+                    image_square = image_rectangle[:,:,width:width+conv1.shape[3]]
+                    if image_square.shape[2]<conv1.shape[3]:
+                        continue
+                    else:
+                        im2col_vector[:,c:c+1]=image_square.reshape(-1,1)
+                        c = c+1         
+            
+    return(im2col_vector)
 
 logger = logging.getLogger("__main__")
 logger.setLevel(logging.INFO)
@@ -68,13 +95,13 @@ adc_area_power = {
     0.008: {AREA: 0.04, POWER: 14.3},
     0.112: {AREA: 0.0594, POWER: 24.1},
     5.000: {AREA: 0.103, POWER: 29},
-                  1.000: {AREA: 0.014, POWER: 10.4},
+                  10.000: {AREA: 0.014, POWER: 10.4},
                   50.000:{AREA:0.00017, POWER: 0.2}}
 dac_area_power = {
    0.008: {AREA: 0.04, POWER: 14.3},
     0.112: {AREA: 0.06, POWER: 26},
     5: {AREA: 0.06, POWER: 26},
-    1: {AREA: 0.06, POWER: 26},
+    10: {AREA: 0.06, POWER: 26},
     50: {AREA: 0.06, POWER: 26}
                   }
 PCA_ACC_Count = 1
@@ -164,8 +191,17 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
         # * VDP size and Number of VDP operations per layer
         vdp_size = kernel_height*kernel_width*kernel_depth
-        no_of_vdp_ops = output_height*output_depth*output_width
-       
+        
+        conv1 = np.random.randn(tensor_count,kernel_height,kernel_width,kernel_depth) 
+        X = np.random.randn(1,input_height,input_width,input_depth)
+        # print(X)
+        stride = 1
+        # Toeplitz matrix
+        X_im2col = im2col(X=X,conv1=conv1,pad=0,stride=1)
+        toe_output_col = X_im2col.shape[1]
+        # no_of_vdp_ops = output_height*output_depth*output_width
+        no_of_vdp_ops = tensor_count*toe_output_col
+        
         
         
         
@@ -198,15 +234,14 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             # if accelerator.vdp_type == "MAM":
             if True:
                 # print("MAM type architecture ")
-                vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
+                # vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
                 
                 
                 # print("Total tensor_count Ops ", tensor_count)
                 # print("VDP per Tensor ", vdp_per_tensor)
                 # print("Tensor Count ", tensor_count)
                 for tensor in range(0, tensor_count):
-                    layer_latency += controller.get_convolution_latency(
-                        accelerator, vdp_per_tensor, vdp_size)
+                    layer_latency += controller.get_convolution_latency(accelerator, no_of_vdp_ops, vdp_size, toe_output_col)
                     # print('Tensor', tensor)
                     accelerator.reset()
                     # print("Layer latency", layer_latency)
@@ -214,12 +249,15 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
                 layer_latency = controller.get_convolution_latency(
                     accelerator, no_of_vdp_ops, vdp_size)
             # print('Layer Latency ',layer_latency)
+            if layer_latency == 0:
+                layer_latency = accelerator.vdp_units_list[ZERO].latency
         total_latency.append(layer_latency)
         vdp_ops.append(no_of_vdp_ops)
         vdp_sizes.append(vdp_size)
+        
     # print("No od VDPs", vdp_ops)
     # print("VDP size", vdp_sizes)
-    # print("Latency  =",total_latency)
+    print("Latency  =",total_latency)
     total_latency = sum(total_latency)
     hardware_utilization = metrics.get_hardware_utilization(
         controller.utilized_rings, controller.idle_rings)
@@ -230,10 +268,11 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
     power = (dynamic_energy_w/total_latency)+static_power_w
     fps_per_w = fps/power
     area = 0
+    print("Psums Accumulations", accelerator.psum_writes)
 
     for accelearator_config in run_config:
         # * Set the values of ADC and DAC area and power values based on the Bit rate
-        if accelearator_config[ACC_TYPE] == 'STOCHASTIC':
+        if accelearator_config[ACC_TYPE] == 'STOCHASTIC' or accelearator_config[ACC_TYPE] == 'ANALOG':
             running_br = accelearator_config[BITRATE]
             metrics.adc.area = adc_area_power[running_br][AREA]
             metrics.adc.power = adc_area_power[running_br][POWER]
@@ -247,8 +286,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             metrics.dac.area = dac_area_power[round(running_br/PCA_ACC_Count,3)][AREA]
             metrics.dac.power = dac_area_power[round(running_br/PCA_ACC_Count,3)][POWER]
         # get_total_area(TYPE, X, Y, N, M, N_FC, M_FC):
-        area += metrics.get_total_area(vdp_type, accelearator_config[UNITS_COUNT], 0, accelearator_config[ELEMENT_SIZE],
-                                       accelearator_config[ELEMENT_COUNT], 0, 0, accelearator_config[RECONFIG],accelearator_config[ACC_TYPE])
+        area += metrics.get_total_area(vdp_type, accelearator_config[UNITS_COUNT], accelearator_config[ELEMENT_SIZE],
+                                       accelearator_config[ELEMENT_COUNT], accelearator_config[RECONFIG],accelearator_config[ACC_TYPE])
         print("Area_pre", area)
     fps_per_w_area = fps_per_w/area
     # print("Area :", area)
@@ -275,21 +314,22 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
   # * Creating accelerator with the configurations
 
 
-accelerator_required_precision = 1
+accelerator_required_precision = 4
 
-ACCELERATOR = [{ELEMENT_SIZE: 31 , ELEMENT_COUNT:  31, UNITS_COUNT: 1, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'ROBIN_EO', ACC_TYPE:'ROBIN', PRECISION:1, BITRATE: 1}]
+ACCELERATOR = [{ELEMENT_SIZE: 83 , ELEMENT_COUNT:  83, UNITS_COUNT: 20, RECONFIG: [
+], VDP_TYPE:'AMM', NAME:'AMM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 10}]
 # ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
 # ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
-LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
-], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
+# LIGHTBULB_ACCELERATOR = [{ELEMENT_SIZE: 16, ELEMENT_COUNT: 4, UNITS_COUNT: 1562, RECONFIG: [
+# ], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
+
 
 tpc_list = [ACCELERATOR]
 print("Required Precision ", accelerator_required_precision)
-cnnModelDirectory = "./CNNModels/Sample/"
+cnnModelDirectory = "./CNNModels/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
-# modelList = ['MobileNet_V2.csv','ShuffleNet_V2.csv','ResNet18.csv', 'VGG-small.csv']
+modelList = ['GoogLeNet.csv','ResNet50.csv','ShuffleNet_V2.csv', 'MobileNet_V2.csv']
 system_level_results = []
 for tpc in tpc_list:
     for modelName in modelList:
@@ -297,7 +337,7 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/GLSVLSI/'+'ROBIN_EO.csv')
+sys_level_results_df.to_csv('Result/GLSVLSI/'+'MMA_WITH_PCA.csv')
 
 
 # #* set clock increment time as the vdp latency time for uniform vdp accelerator

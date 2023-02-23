@@ -1,2 +1,0 @@
-,name,Model_Name,config,hardware_utilization,total_latency,fps,total_dynamic_energy,total_static_power,fps_per_w,area,fps_per_w_per_area
-0,ROBIN_EO,ResNet50,"[{'element_size': 31, 'element_count': 31, 'units_count': 1, 'reconfig': [], 'vdp_type': 'AMM', 'name': 'ROBIN_EO', 'accelerator_type': 'ROBIN', 'precision': 1, 'bitrate': 1}]",100.0,3.328000000000016e-05,30048.076923076776,1.595625191981568,11.16978710773,0.6265676242255942,129.34996602434998,0.0048439720819690325

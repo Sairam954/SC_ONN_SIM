@@ -18,6 +18,8 @@ class Accelerator:
         self.vdp_element_sizes = set()
         self.pheripherals = {}
         self.acc_type = 'ANALOG'
+        self.psum_writes = 0
+        self.psum_reads = 0
     
     def set_vdp_type(self,vdp_type):
         self.vdp_type = vdp_type

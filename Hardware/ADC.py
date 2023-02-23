@@ -8,7 +8,7 @@ class ADC(Pheripheral):
         self.power = 2e-3
         self.energy = 49.7e-9
         self.latency = 0.78e-9 # * from holylight 1 Cycle for ADC and clock at 1.28 GHz so latency 1/1.28 GHz
-        self.area = None
+        self.area = 0.014
         # * Each MRR has a dedicated ADC so no need of queues, start time end time
         self.request_queue = None
         self.waiting_queue = None

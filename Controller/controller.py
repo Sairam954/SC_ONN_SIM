@@ -91,7 +91,7 @@ class Controller:
             clock=clock+clock_increment  
             # print('Clock', clock)
         return clock,accelerator
-    def  get_convolution_latency(self, accelerator, convolutions, kernel_size, output_size):
+    def  get_convolution_latency(self, accelerator, convolutions, kernel_size, output_col):
         """[  Function has to give the latency taken by the given accelerator to perform stated counvolutions with mentioned kernel size
         ]
 
@@ -99,7 +99,7 @@ class Controller:
             accelerator ([Hardware.Accelerator]): [Accelerator for performing the convolutions]
             convolution_count ([type]): [No of convolutions to be performed by the accelerator]
             kernel_size ([type]): [size of the convolution]
-            output size: output height * output width, it is needed to know the count of convolution a single kernels performs
+            output col: Number of columns in the toepplitz matrix
             
         Returns:
             [float]: [returns the latency required by the accelerator to perform all the convolutions]
@@ -114,16 +114,11 @@ class Controller:
         UTILIZED_RINGS = "utilized_rings"
         IDLE_RINGS = "idle_rings"
         
-        PCA_DKV_LIMIT = 14
+        PCA_DKV_LIMIT =  11520 # ! Change the variable name to PCA capacitor count
         dataflow = 'temporal'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
-        # print('Convolutions to be completed ', convolutions)
-        # print('Clock Increment', clock_increment)
-        # return 
-        # if accelerator.is_hybrid:
-        #     clock_increment = abs(accelerator.vdp_units_list[ZERO].latency- accelerator.vdp_units_list[LAST].latency)
-        # print("Is Hybrid :", accelerator.is_hybrid)
+
         completed_layer = False
         cycle = 0
         
@@ -134,7 +129,6 @@ class Controller:
             partial_sum_list = []
             accelerator.pheripherals[ADDER].controller(clock)
            
-            
             for vdp in accelerator.vdp_units_list:
                 # print("VDP End Time: ", vdp.end_time)
                 # print('VDP Number ', vdp_no)
@@ -145,77 +139,83 @@ class Controller:
                     # print("VDP unit Available Vdp No ", vdp_no)
                     vdp.start_time = clock
                     if dataflow == 'temporal':
-                    # ! To itegrate temporal dataflow, the idea is to change the end time of the vdp unit by the number of  dot product operation for that particular set of weights
-                        vdp.end_time = clock+vdp.latency*(output_size)+vdp.to_tuning_latency
+                        vdpelement = vdp.vdp_element_list[ZERO]
+                        n_folds = int(kernel_size/vdpelement.element_size)
+                    # ! To integrate temporal dataflow, the idea is to change the end time of the vdp unit by the number of dot product operation for that particular set of weights
+                        vdp.end_time = clock+vdp.latency*(output_col*n_folds)+vdp.to_tuning_latency
+                        vdp.calls_count +=n_folds*output_col
+                        vdp_convo_count = 0
+                        element_convo_count = output_col
+                        vdp_convo_count = element_convo_count*vdp.get_element_count()
+                        convolutions = convolutions-vdp_convo_count
+                        vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
+                        self.utilized_rings += output_col*kernel_size*2
+                        self.idle_rings += abs(n_folds*output_col*vdpelement.element_size*2 - self.utilized_rings)
                     else:
                         vdp.end_time = clock+vdp.latency
-                    vdp.calls_count +=1
-                    vdpelement = vdp.vdp_element_list[ZERO]
-                    vdp_convo_count = 0
-                    try:
-                        # print("Kernel Size :",kernel_size)
-                        # * element convo count contains the value of number of kernel size convo performed by vdp for reconfig it can be greater than one
-                        element_convo_count = vdpelement.perform_convo_count(kernel_size)
-                        vdp_convo_count = element_convo_count*vdp.get_element_count()
-                        # print("Element VDP Count",element_convo_count)
-                        convolutions = convolutions-vdp_convo_count
-                        
-                        # *  AMM has array of Weight and Input so 2 + element size to represent the rings in the input WDM mux
-                        vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
-                        self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
-                        self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]
-                        # print("Utilized Rings :", self.utilized_rings)
-                        # print("Idle Rings :",self.idle_rings)
-                    except(VDPElementException):
-                        # print("Need to Decompose Kernel")
-                        
-                        decomposed_kernel_size = vdpelement.reconfigurable_to_element_sizes[LAST]
-                        # print("Kernel Size",kernel_size)
-                        # print("Decomposed Kernel Size",decomposed_kernel_size)
-                        # print("VDP Element Size ", vdpelement.element_size)
-                        # print("VDP Element Count ",vdp.get_element_count())
-                        decomposed_kernel_count = math.ceil(kernel_size/decomposed_kernel_size)
-                        # print("Decomposed Kernel Count ",decomposed_kernel_count)
-                        element_convo_count = vdpelement.perform_convo_count(decomposed_kernel_size)
-                        # print("VDPE Convolution Count ", element_convo_count)
-                        vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
-                        # print("VDP Convolution Count",vdp_convo_count)
-                        # * one use case that was missed while performing this logic was what to do when a single convolution can not be performed 
-                        # * on one vdp unit even with kernel decomposition, in this case the partial convo gets divided into multiple vdps 
-                        # * method to solve this thing you are sending creating a seperate method to perform these partial convolution
-                        # * First calculate the number of partial convo   
-                        if vdp_convo_count == 0:
-                            # * need to distribute the convolution on to various vdp units as single vdp cannot perform 
-                            # print('DKV distrubted across various VDPEs')
-                            partial_convolutions = decomposed_kernel_count
-                            vdp.end_time = clock # * this is to make this vdp unit also available for operation
-                            clock, accelerator = self.get_partial_convolution_latency(clock,clock_increment,accelerator,partial_convolutions,decomposed_kernel_size)
+                        vdp.calls_count +=1
+                        vdpelement = vdp.vdp_element_list[ZERO]
+                        vdp_convo_count = 0
+                        try:
+                            # print("Kernel Size :",kernel_size)
+                            # * element convo count contains the value of number of kernel size convo performed by vdp for reconfig it can be greater than one
+                            element_convo_count = vdpelement.perform_convo_count(kernel_size)
+                            vdp_convo_count = element_convo_count*vdp.get_element_count()
+                            # print("Element VDP Count",element_convo_count)
+                            convolutions = convolutions-vdp_convo_count
+                            
+                            # *  AMM has array of Weight and Input so 2 + element size to represent the rings in the input WDM mux
+                            vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
+                            self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
+                            self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]
+                            # print("Utilized Rings :", self.utilized_rings)
+                            # print("Idle Rings :",self.idle_rings)
+                        except(VDPElementException):
+                            # print("Need to Decompose Kernel")
+                            
+                            decomposed_kernel_size = vdpelement.reconfigurable_to_element_sizes[LAST]
+                            # print("Kernel Size",kernel_size)
+                            # print("Decomposed Kernel Size",decomposed_kernel_size)
+                            # print("VDP Element Size ", vdpelement.element_size)
+                            # print("VDP Element Count ",vdp.get_element_count())
+                            decomposed_kernel_count = math.ceil(kernel_size/decomposed_kernel_size)
+                            # print("Decomposed Kernel Count ",decomposed_kernel_count)
+                            element_convo_count = vdpelement.perform_convo_count(decomposed_kernel_size)
+                            # print("VDPE Convolution Count ", element_convo_count)
+                            if dataflow == 'temporal':
+                                vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
+                            else:
+                                vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
+                                
+                            # print("VDP Convolution Count",vdp_convo_count)
+                            # * one use case that was missed while performing this logic was what to do when a single convolution can not be performed 
+                            # * on one vdp unit even with kernel decomposition, in this case the partial convo gets divided into multiple vdps 
+                            # * method to solve this thing you are sending creating a seperate method to perform these partial convolution
+                            # * First calculate the number of partial convo   
+                            if vdp_convo_count == 0:
+                                # * need to distribute the convolution on to various vdp units as single vdp cannot perform 
+                                # print('DKV distrubted across various VDPEs')
+                                partial_convolutions = decomposed_kernel_count
+                                vdp.end_time = clock # * this is to make this vdp unit also available for operation
+                                clock, accelerator = self.get_partial_convolution_latency(clock,clock_increment,accelerator,partial_convolutions,decomposed_kernel_size)
 
-                            vdp_convo_count = 1 # * since we are calculating the time taken to perform partial convo count of single convo
-                            # * Substract this vdp utilization as they are already taken care in partial convolution latency calculation
+                                vdp_convo_count = 1 # * since we are calculating the time taken to perform partial convo count of single convo
+                                # * Substract this vdp utilization as they are already taken care in partial convolution latency calculation
+                                vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,decomposed_kernel_size,vdpelement.element_size)
+                                self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
+                                self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]    
                             vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,decomposed_kernel_size,vdpelement.element_size)
                             self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
-                            self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]    
-                        vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,decomposed_kernel_size,vdpelement.element_size)
-                        self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
-                        self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]
-                        # print("Utilized Rings :", self.utilized_rings)
-                        # print("Idle Rings :",self.idle_rings)
-                        convolutions = convolutions-vdp_convo_count
-                        # * Sceduling of partial sum request and updating convolution latency 
-                        if accelerator.acc_type != 'ONNA':
+                            self.idle_rings += vdp_mrr_utiliz[IDLE_RINGS]
+                            # print("Utilized Rings :", self.utilized_rings)
+                            # print("Idle Rings :",self.idle_rings)
+                            convolutions = convolutions-vdp_convo_count
+                            # * Sceduling of partial sum request and updating convolution latency 
+                            
                             partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
-                        else: 
-                            required_precision = 20
-                            # print('Decomposed Kernel ', decomposed_kernel_count)
-                            # print('Batch of VDPs accumulated ', math.floor(decomposed_kernel_count/(PCA_DKV_LIMIT*(2**required_precision))) )
-                            if (math.floor(decomposed_kernel_count/PCA_DKV_LIMIT))>1:
-                                partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(math.floor(decomposed_kernel_count/PCA_DKV_LIMIT))
-                                # print('Partial Sum Latency',partial_sum_latency)
-                            else:
-                                partial_sum_latency = 0 
-                                # print('Partial Sum Latency',partial_sum_latency)
-                        vdp.end_time = vdp.end_time + partial_sum_latency
+                            accelerator.psum_writes += decomposed_kernel_count
+                            
+                            vdp.end_time = vdp.end_time + partial_sum_latency
                     if convolutions <= 0:
                         completed_layer=True
                         # print("************Convolutions Completed****************",convolutions)
@@ -238,6 +238,10 @@ class Controller:
         
             clock=clock+clock_increment
         # print('Conv Latency', clock)
+        
+        for vdp in accelerator.vdp_units_list:
+            if vdp.end_time > clock:
+                clock = vdp.end_time
         # print('PSum Latency', accelerator.pheripherals[ADDER].get_waiting_list_latency())   
         clock = clock + accelerator.pheripherals[ADDER].get_waiting_list_latency()
         # print('Clock', clock)
