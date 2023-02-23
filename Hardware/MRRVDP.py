@@ -73,6 +73,19 @@ class MRRVDP(VDP):
             # print("PD  Latency---->",self.pd_latency)
             # print("Pheripheral Latency---->",self.pheripheral_latency)
             return self.latency
+        elif self.vdp_type == 'MMA':
+            # distance = self.vdp_element_list[0].element_size * \
+            #     (2*np.pi*self.ring_radius+self.pitch)
+            # self.prop_latency = distance/(3e8)
+            # self.latency = self.prop_latency + self.eo_tuning_latency + \
+            #     self.tia_latency+self.pd_latency+self.pheripheral_latency
+            self.latency = (1/self.br)
+            # print("Analog Latency ---->",self.latency )
+            # print("EO Tuning Latency---->",self.eo_tuning_latency)
+            # print("TIA  Latency---->",self.tia_latency)
+            # print("PD  Latency---->",self.pd_latency)
+            # print("Pheripheral Latency---->",self.pheripheral_latency)
+            return self.latency
         elif self.vdp_type == 'MAM':
             distance = self.vdp_element_list[0].element_size * \
                 (2*np.pi*self.ring_radius+self.pitch)
@@ -125,6 +138,11 @@ class MRRVDP(VDP):
             # print('No of utilized comb switches',no_of_used_comb_switches)
         if self.vdp_type == "AMM":
             total_vdp_mrr = self.get_element_count()*(element_size*2)+no_of_comb_switches
+            utilized_rings = element_convo_count * \
+                (kernel_size*2)*self.get_element_count()+no_of_used_comb_switches
+            idle_rings = total_vdp_mrr - utilized_rings
+        if self.vdp_type == "MMA":
+            total_vdp_mrr = self.get_element_count()*(element_size)+no_of_comb_switches
             utilized_rings = element_convo_count * \
                 (kernel_size*2)*self.get_element_count()+no_of_used_comb_switches
             idle_rings = total_vdp_mrr - utilized_rings

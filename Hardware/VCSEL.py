@@ -1,4 +1,3 @@
-
 class VCSEL:
     def __init__(self):
         self.no_of_parallel_requests = 1

@@ -116,7 +116,7 @@ class Controller:
         
         PCA_DKV_LIMIT =  11520 # ! Change the variable name to PCA capacitor count
         cache_size = accelerator.cache_size
-        dataflow = 'temporal'
+        dataflow = 'temporall'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
 
@@ -154,7 +154,7 @@ class Controller:
                         self.idle_rings += abs(n_folds*output_col*vdpelement.element_size*2 - self.utilized_rings)
                         vdp_cache_reads = (n_folds*vdpelement.element_size+n_folds*vdpelement.element_size*output_col)*vdp.get_element_count()
                         accelerator.cache_reads += vdp_cache_reads
-                        accelerator.cache_writes +=  math.ceil((vdp_cache_reads)/(cache_size))*cache_size
+                        accelerator.cache_writes +=  math.ceil((vdp_cache_reads)/(cache_size))
                     else:
                         vdp.end_time = clock+vdp.latency
                         vdp.calls_count +=1
@@ -167,7 +167,9 @@ class Controller:
                             vdp_convo_count = element_convo_count*vdp.get_element_count()
                             # print("Element VDP Count",element_convo_count)
                             convolutions = convolutions-vdp_convo_count
-                            
+                            vdp_cache_reads = vdp_convo_count*vdpelement.element_size
+                            accelerator.cache_reads += vdp_cache_reads
+                            accelerator.cache_writes +=  math.ceil((vdp_cache_reads)/(cache_size))
                             # *  AMM has array of Weight and Input so 2 + element size to represent the rings in the input WDM mux
                             vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
                             self.utilized_rings += vdp_mrr_utiliz[UTILIZED_RINGS]
@@ -218,6 +220,10 @@ class Controller:
                             # accelerator.buffer_access +=vdpelement.element_size*+n_folds*vdpelement.element_size*output_col
                             partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
                             accelerator.psum_writes += decomposed_kernel_count
+                            accelerator.psum_reads += decomposed_kernel_count
+                            vdp_cache_reads = (vdp_convo_count*decomposed_kernel_count*vdpelement.element_size+vdp_convo_count*decomposed_kernel_count*vdpelement.element_size)
+                            accelerator.cache_reads += vdp_cache_reads
+                            accelerator.cache_writes += math.ceil(vdp_cache_reads/(cache_size))
                             
                             vdp.end_time = vdp.end_time + partial_sum_latency
                     if convolutions <= 0:

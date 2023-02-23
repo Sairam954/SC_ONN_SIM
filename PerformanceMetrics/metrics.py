@@ -51,9 +51,12 @@ class Metrics:
 
         for vdp in accelerator.vdp_units_list:
             eDram_energy = vdp.calls_count*self.eDram.energy
+            cache_read_energy = (accelerator.cache_reads + accelerator.psum_reads)*67.5e-15*4 # 0.044 pJ per bit
+            cache_write_energy = (accelerator.cache_writes + accelerator.psum_writes)*67.5e-15*4 # 0.044 pJ per bit
+            cache_energy = cache_read_energy + cache_write_energy
             pd_energy = vdp.calls_count*vdp.get_element_count()*self.pd.energy
             tia_energy = vdp.calls_count*vdp.get_element_count()*self.tia.energy
-            total_energy += eDram_energy+pd_energy+tia_energy
+            total_energy += eDram_energy+pd_energy+tia_energy+cache_energy
         if accelerator.acc_type == 'ANALOG':
             dac_energy = self.dac.energy*utilized_rings
             total_energy = total_energy+dac_energy
@@ -190,6 +193,27 @@ class Metrics:
                 no_of_pd = elements_count
                 no_of_tia = elements_count
                 no_of_mrr = 2*elements_count*element_size+element_size
+                laser_power = self.laser_power_per_wavelength*elements_count*element_size
+                power_params = {}
+                power_params['adc'] = no_of_adc*self.adc.power
+                power_params['dac'] = no_of_dac*self.dac.power
+                power_params['pd'] = no_of_pd*self.pd.power
+                power_params['tia'] = no_of_tia*self.tia.power
+                power_params['mrr'] = no_of_mrr * \
+                    (self.mrr.power_eo+self.mrr.power_to)
+                power_params['laser_power'] = laser_power
+
+                vdp_power += no_of_adc*self.adc.power + no_of_dac*self.dac.power + no_of_pd*self.pd.power + no_of_tia * \
+                    self.tia.power + no_of_mrr * \
+                    (self.mrr.power_eo+self.mrr.power_to) + \
+                    laser_power*self.wall_plug_efficiency
+            
+            elif vdp.vdp_type == 'MMA':
+                no_of_adc = elements_count*element_size
+                no_of_dac = elements_count*element_size
+                no_of_pd = elements_count
+                no_of_tia = elements_count
+                no_of_mrr = elements_count*element_size+element_size
                 laser_power = self.laser_power_per_wavelength*elements_count*element_size
                 power_params = {}
                 power_params['adc'] = no_of_adc*self.adc.power
