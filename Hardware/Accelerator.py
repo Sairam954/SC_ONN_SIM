@@ -20,6 +20,7 @@ class Accelerator:
         self.acc_type = 'ANALOG'
         self.psum_writes = 0
         self.psum_reads = 0
+        self.cache_size = (2.24e8/4) # 2.24 MB with 4 bits per word 
     
     def set_vdp_type(self,vdp_type):
         self.vdp_type = vdp_type

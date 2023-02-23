@@ -115,6 +115,7 @@ class Controller:
         IDLE_RINGS = "idle_rings"
         
         PCA_DKV_LIMIT =  11520 # ! Change the variable name to PCA capacitor count
+        cache_size = accelerator.cache_size
         dataflow = 'temporal'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
@@ -151,6 +152,9 @@ class Controller:
                         vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
                         self.utilized_rings += output_col*kernel_size*2
                         self.idle_rings += abs(n_folds*output_col*vdpelement.element_size*2 - self.utilized_rings)
+                        vdp_cache_reads = (n_folds*vdpelement.element_size+n_folds*vdpelement.element_size*output_col)*vdp.get_element_count()
+                        accelerator.cache_reads += vdp_cache_reads
+                        accelerator.cache_writes +=  math.ceil((vdp_cache_reads)/(cache_size))*cache_size
                     else:
                         vdp.end_time = clock+vdp.latency
                         vdp.calls_count +=1
@@ -211,7 +215,7 @@ class Controller:
                             # print("Idle Rings :",self.idle_rings)
                             convolutions = convolutions-vdp_convo_count
                             # * Sceduling of partial sum request and updating convolution latency 
-                            
+                            # accelerator.buffer_access +=vdpelement.element_size*+n_folds*vdpelement.element_size*output_col
                             partial_sum_latency = accelerator.pheripherals[ADDER].get_request_latency(decomposed_kernel_count)
                             accelerator.psum_writes += decomposed_kernel_count
                             

@@ -192,8 +192,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         # * VDP size and Number of VDP operations per layer
         vdp_size = kernel_height*kernel_width*kernel_depth
         
-        conv1 = np.random.randn(tensor_count,kernel_height,kernel_width,kernel_depth) 
-        X = np.random.randn(1,input_height,input_width,input_depth)
+        conv1 = np.random.randn(tensor_count,kernel_depth,kernel_height,kernel_width) 
+        X = np.random.randn(1,input_depth,input_height,input_width)
         # print(X)
         stride = 1
         # Toeplitz matrix
