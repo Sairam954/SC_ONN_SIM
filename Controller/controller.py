@@ -116,7 +116,7 @@ class Controller:
         
         PCA_DKV_LIMIT =  11520 # ! Change the variable name to PCA capacitor count
         cache_size = accelerator.cache_size
-        dataflow = 'temporall'
+        dataflow = 'temporal'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
 
