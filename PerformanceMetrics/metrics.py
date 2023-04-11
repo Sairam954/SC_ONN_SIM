@@ -73,7 +73,7 @@ class Metrics:
         return total_energy
 
     def get_total_latency(self, latencylist):
-        total_latency = sum(latencylist)+self.thermal_tuning_latency
+        total_latency = sum(latencylist)+self.thermal_tuning_latency+(accelerator.cache_reads + accelerator.psum_reads +accelerator.cache_writes + accelerator.psum_writes)
         return total_latency
 
     def get_static_power(self, accelerator):

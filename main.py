@@ -88,6 +88,8 @@ NAME = 'name'
 POWER = 'power'
 BATCH_SIZE = "batch_size"
 
+
+
 # * VDP element constants
 ring_radius = 4.55E-6
 pitch = 5E-6
@@ -98,14 +100,19 @@ adc_area_power = {
     0.112: {AREA: 0.0594, POWER: 24.1},
     5.000: {AREA: 0.103, POWER: 29},
                   1.000: {AREA: 0.014, POWER: 10.4},
-                  10.000:{AREA:0.00017, POWER: 0.2}}
+                  10.000:{AREA:0.00017, POWER: 0.2},
+                  50.000:{AREA:0.00017, POWER: 0.2},
+                  100.000:{AREA:0.00017, POWER: 0.2}
+                  }
 dac_area_power = {
    0.008: {AREA: 0.04, POWER: 14.3},
     0.112: {AREA: 0.06, POWER: 26},
     5: {AREA: 0.06, POWER: 26},
     1: {AREA: 0.06, POWER: 26},
-    10: {AREA: 0.06, POWER: 26}
-                  }
+    10: {AREA: 0.06, POWER: 26},
+    50: {AREA: 0.06, POWER: 26},
+    100: {AREA: 0.06, POWER: 26}
+                  }     
 PCA_ACC_Count = 1
 
 def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
@@ -127,10 +134,13 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
     controller = Controller()
     metrics = Metrics()
     batch_size = 1
+    pca = ""
+    dataflow = ""
     # * Creating MRR VDP units with the vdp configurations and adding it to accelerator
     for vdp_config in run_config:
         vdp_type = vdp_config[VDP_TYPE]
-        
+        dataflow = vdp_config.get(DATAFLOW)
+        pca = vdp_config.get(PCA)
         batch_size = vdp_config.get(BATCH_SIZE)
         accelerator.set_vdp_type(vdp_type)
         accelerator.set_acc_type(vdp_config.get(ACC_TYPE))
@@ -192,7 +202,7 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
         output_width = nnModel[OUTPUT_WIDTH][idx]
         output_depth = nnModel[OUTPUT_DEPTH][idx]
         # * debug statments to be deleted
-        print('Layer Name  ;', layer_type)
+        # print('Layer Name  ;', layer_type)
         # print('Kernel Height', kernel_height,'Kernel width',kernel_width, 'Kernel Depth', kernel_depth)
 
         # * VDP size and Number of VDP operations per layer
@@ -239,25 +249,13 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
             layer_latency = pool_latency
         else:
             # * other layers are handled here
-            # * if VDP_type = MAM then the inputs are shared so need to process tensor by tensor rather than whole layer VDP operations
-            # if accelerator.vdp_type == "MAM":
-            if True:
-                # print("MAM type architecture ")
-                # vdp_per_tensor = int(no_of_vdp_ops/tensor_count)
-                
-                
-                # print("Total tensor_count Ops ", tensor_count)
-                # print("VDP per Tensor ", vdp_per_tensor)
-                # print("Tensor Count ", tensor_count)
-                for tensor in range(0, tensor_count):
-                    layer_latency += controller.get_convolution_latency(accelerator, no_of_vdp_ops, vdp_size,toe_output_col)
-                    # print('Tensor', tensor)
-                    accelerator.reset()
-                    # print("Layer latency", layer_latency)
-            else:
-                layer_latency = controller.get_convolution_latency(
-                    accelerator, no_of_vdp_ops, vdp_size)
-            # print('Layer Latency ',layer_latency)
+
+            for tensor in range(0, tensor_count):
+                layer_latency += controller.get_convolution_latency(accelerator, no_of_vdp_ops, vdp_size,toe_output_col, dataflow, pca)
+                # print('Tensor', tensor)
+                accelerator.reset()
+                # print("Layer latency", layer_latency)
+        
             if layer_latency == 0:
                 layer_latency = accelerator.vdp_units_list[ZERO].latency
         total_latency.append(layer_latency)
@@ -333,7 +331,8 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
     result["Total_Cache_Reads"] = total_reads
     result["Total_Cache_Writes"] = total_writes
     result["Total_Cache_Access"] = total_access
-    result["Dataflow"] = "Weight-Stationary"
+    result["Dataflow"] = dataflow
+    result["PCA"] = pca 
     result["Datarate"] = accelerator_config[0][BITRATE]
     result["BatchSize"] = accelerator_config[0][BATCH_SIZE]
     
@@ -344,114 +343,19 @@ def run(modelName, cnnModelDirectory, accelerator_config, required_precision=8):
 
 accelerator_required_precision = 4
 
-ACCELERATOR_AMW_1 =    [{
-    ELEMENT_SIZE: 31, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 31, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 197, # Number of processing unit present in an accelerator
+ACCELERATOR_TEST =    [{
+    ELEMENT_SIZE: 1, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
+    ELEMENT_COUNT: 50, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
+    UNITS_COUNT: 1, # Number of processing unit present in an accelerator
     RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
     VDP_TYPE: "AMM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME: "AMW_1", # Name of the accelerator 
+    NAME: "Test", # Name of the accelerator 
     ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
     PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 1,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-
-ACCELERATOR_AMW_5 =    [{
-    ELEMENT_SIZE: 16, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 16, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 734, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "AMM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME: "AMW_5", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 5,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-ACCELERATOR_AMW_10 =    [{
-    ELEMENT_SIZE: 12, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 12, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 1280, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "AMM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME: "AMW_10", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 10 ,
-    BATCH_SIZE: 128# The bit rate of the accelerator 
-}]
-ACCELERATOR_MAW_1 =    [{
-    ELEMENT_SIZE: 44, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 44, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 173, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MAM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME:"MAW_1", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 1,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-ACCELERATOR_MAW_5 =    [{
-    ELEMENT_SIZE: 22, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 22, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 673, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MAM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME:"MAW_5", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 5,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-ACCELERATOR_MAW_10 =    [{
-    ELEMENT_SIZE: 16, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 16, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 1241, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MAM", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME: "MAW_10", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 10 ,
-    BATCH_SIZE: 128# The bit rate of the accelerator 
-}]
-ACCELERATOR_HEANA_1 =    [{
-    ELEMENT_SIZE: 83, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 83, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 50, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MMA", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME:"HEANA_1", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 1,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-ACCELERATOR_HEANA_5 =    [{
-    ELEMENT_SIZE: 42, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 42, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 190, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MMA", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME:"HEANA_5", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 5,
-    BATCH_SIZE: 128 # The bit rate of the accelerator 
-}]
-ACCELERATOR_HEANA_10 =    [{
-    ELEMENT_SIZE: 31, # The supported dot product size of the processing unit, generally equal to number of wavelengths multiplexed in weight bank/activation bank 
-    ELEMENT_COUNT: 31, # Number of parallel dot products that can be performed by one processing unit, generally equal to the number of output waveguides in a processing unit  
-    UNITS_COUNT: 356, # Number of processing unit present in an accelerator
-    RECONFIG: [], # Useful if the processing unit element size can be reconfigured according to the convolution computation need
-    VDP_TYPE: "MMA", # More information abour vector dot product can be found in our paper ([https://ieeexplore.ieee.org/abstract/document/9852767]
-    NAME: "HEANA_10", # Name of the accelerator 
-    ACC_TYPE: "ANALOG", # Accelerator Type for example, ANALOG, ONNA, LIGHTBULB, and ROBIN. This parameter helps in evaluation of performance metrics based on accelerator
-    PRECISION: 4, # The bit precision supported  by the accelerator, this value along with ***accelerator_required_precision*** determines whether bit-slicing needs to be implemented
-    BITRATE: 10 ,
-    BATCH_SIZE: 128# The bit rate of the accelerator 
+    BITRATE: 100 ,
+    BATCH_SIZE: 1,# The bit rate of the accelerator 
+    PCA: True, # PCA: True for PCA, False for no PCA
+    DATAFLOW: "WS" # DATAFLOW: "WS" for weight-stationary, "OS" for output-stationary, "IS" for input-stationary
 }]
 # ANALOG_MAM_ACCELERATOR = [{ELEMENT_SIZE: 44, ELEMENT_COUNT: 44, UNITS_COUNT: 3172, RECONFIG: [
 # ], VDP_TYPE:'MAM', NAME:'ANALOG_MAM', ACC_TYPE:'ANALOG', PRECISION:4, BITRATE: 5}]
@@ -459,7 +363,7 @@ ACCELERATOR_HEANA_10 =    [{
 # ], VDP_TYPE:'AMM', NAME:'LIGHTBULB', ACC_TYPE:'ANALOG', PRECISION:1, BITRATE: 50}]
 
 
-tpc_list = [ACCELERATOR_AMW_1,ACCELERATOR_AMW_5,ACCELERATOR_AMW_10,ACCELERATOR_MAW_1,ACCELERATOR_MAW_5, ACCELERATOR_MAW_10,ACCELERATOR_HEANA_1, ACCELERATOR_HEANA_5, ACCELERATOR_HEANA_10]
+tpc_list = [ACCELERATOR_TEST]
 # tpc_list = [ACCELERATOR_AMW_1,ACCELERATOR_AMW_5,ACCELERATOR_AMW_10]
 
 print("Required Precision ", accelerator_required_precision)
@@ -467,7 +371,7 @@ cnnModelDirectory = "./CNNModels/"
 modelList = [f for f in listdir(
     cnnModelDirectory) if isfile(join(cnnModelDirectory, f))]
 # modelList = ['GoogLeNet.csv']
-# modelList = ['GoogLeNet.csv','ResNet50.csv','ShuffleNet_V2.csv', 'MobileNet_V2.csv']
+modelList = ['GoogLeNet.csv']
 
 
 
@@ -481,7 +385,7 @@ for tpc in tpc_list:
         system_level_results.append(
             run(modelName, cnnModelDirectory, tpc, accelerator_required_precision))
 sys_level_results_df = pd.DataFrame(system_level_results)
-sys_level_results_df.to_csv('Result/HEANA/BatchSize_1_WS_PCA.csv')
+sys_level_results_df.to_csv('Result/TEST_IS.csv')
 
 
 # #* set clock increment time as the vdp latency time for uniform vdp accelerator

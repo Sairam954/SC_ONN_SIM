@@ -10,3 +10,5 @@ LAYERS_SUPPORTED = ["convolution","inner_product"]
 ACC_TYPE ="accelerator_type" 
 PRECISION = "precision"
 BITRATE = "bitrate"
+PCA = "pca"
+DATAFLOW = "dataflow"

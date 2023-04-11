@@ -91,7 +91,7 @@ class Controller:
             clock=clock+clock_increment  
             # print('Clock', clock)
         return clock,accelerator
-    def  get_convolution_latency(self, accelerator, convolutions, kernel_size, output_col):
+    def  get_convolution_latency(self, accelerator, convolutions, kernel_size, output_col, dataflow='WS', pca=False):
         """[  Function has to give the latency taken by the given accelerator to perform stated counvolutions with mentioned kernel size
         ]
 
@@ -100,6 +100,8 @@ class Controller:
             convolution_count ([type]): [No of convolutions to be performed by the accelerator]
             kernel_size ([type]): [size of the convolution]
             output col: Number of columns in the toepplitz matrix
+            pca: If PCA is used or not
+            dataflow: Dataflow of the accelerator
             
         Returns:
             [float]: [returns the latency required by the accelerator to perform all the convolutions]
@@ -114,12 +116,9 @@ class Controller:
         UTILIZED_RINGS = "utilized_rings"
         IDLE_RINGS = "idle_rings"
         
-        PCA_DKV_LIMIT =  11520 # ! Change the variable name to PCA capacitor count
         cache_size = accelerator.cache_size
-        dataflow = 'temporal'
         clock = 0
         clock_increment = accelerator.vdp_units_list[ZERO].latency
-
         completed_layer = False
         cycle = 0
         
@@ -139,11 +138,13 @@ class Controller:
                 if vdp.end_time <= clock:
                     # print("VDP unit Available Vdp No ", vdp_no)
                     vdp.start_time = clock
-                    if dataflow == 'temporal':
+                    if pca:
                         vdpelement = vdp.vdp_element_list[ZERO]
                         n_folds = int(kernel_size/vdpelement.element_size)
-                    # ! To integrate temporal dataflow, the idea is to change the end time of the vdp unit by the number of dot product operation for that particular set of weights
-                        vdp.end_time = clock+vdp.latency*(output_col*n_folds)+vdp.to_tuning_latency
+                        if dataflow == 'WS' or dataflow == 'OS':
+                            vdp.end_time = clock+vdp.latency*(output_col*n_folds)+vdp.to_tuning_latency # Output Stationary or Weight Stationary
+                        else: # input stationary
+                            vdp.end_time = clock+vdp.latency*(output_col*n_folds)+vdp.to_tuning_latency*n_folds # Input Stationary weights are changed frequencty with tempo optic tuning         
                         vdp.calls_count +=n_folds*output_col
                         vdp_convo_count = 0
                         element_convo_count = output_col
@@ -152,7 +153,10 @@ class Controller:
                         vdp_mrr_utiliz = vdp.get_utilized_idle_rings_convo(element_convo_count,kernel_size,vdpelement.element_size)
                         self.utilized_rings += output_col*kernel_size*2
                         self.idle_rings += abs(n_folds*output_col*vdpelement.element_size*2 - self.utilized_rings)
-                        vdp_cache_reads = (n_folds*vdpelement.element_size+n_folds*vdpelement.element_size*output_col)*vdp.get_element_count()
+                        if dataflow == 'WS' or dataflow == 'IS':
+                            vdp_cache_reads = (n_folds*vdpelement.element_size+n_folds*vdpelement.element_size*output_col)*vdp.get_element_count() # Weight or Input Stationary
+                        else: # Output Stationary
+                            vdp_cache_reads = (n_folds*vdpelement.element_size*output_col+n_folds*vdpelement.element_size*output_col)*vdp.get_element_count() # Output Stationary
                         accelerator.cache_reads += vdp_cache_reads
                         accelerator.cache_writes +=  math.ceil((vdp_cache_reads)/(cache_size))
                     else:
@@ -188,7 +192,7 @@ class Controller:
                             # print("Decomposed Kernel Count ",decomposed_kernel_count)
                             element_convo_count = vdpelement.perform_convo_count(decomposed_kernel_size)
                             # print("VDPE Convolution Count ", element_convo_count)
-                            if dataflow == 'temporal':
+                            if pca:
                                 vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
                             else:
                                 vdp_convo_count = int((element_convo_count*vdp.get_element_count())/(decomposed_kernel_count))
@@ -196,7 +200,7 @@ class Controller:
                             # print("VDP Convolution Count",vdp_convo_count)
                             # * one use case that was missed while performing this logic was what to do when a single convolution can not be performed 
                             # * on one vdp unit even with kernel decomposition, in this case the partial convo gets divided into multiple vdps 
-                            # * method to solve this thing you are sending creating a seperate method to perform these partial convolution
+                            # * method to solve this thing is that you are reating a seperate method to perform these partial convolution
                             # * First calculate the number of partial convo   
                             if vdp_convo_count == 0:
                                 # * need to distribute the convolution on to various vdp units as single vdp cannot perform 

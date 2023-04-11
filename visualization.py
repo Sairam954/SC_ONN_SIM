@@ -87,17 +87,17 @@ acc_precision = 'ACC_SIXTEEN_BIT'
 # df =  pd.concat([df1, df2, df3], ignore_index=True)
 # df.to_csv('Result/'+acc_precision+'/Combined.csv')
 
-df = pd.read_csv('Result/GLSVLSI/ALL.csv')
+df = pd.read_csv('Result/HEANA/Preprocessed_HEANA_Batchsize_256.csv')
 # df = df.drop(df[df['Model_Name'] == 'VGG16'].index)
 # df = df.drop(df[df['Model_Name'] == 'DenseNet121'].index)
 # df = df.drop(df[df['Accelerator_Type'] == 'ATRIA'].index)
-cal_gmean_col = ['fps']
+cal_gmean_col = ['fps_per_w']
 df = calGmeanDF(df, cal_gmean_col)
 
 
 # * Metrics to be plotted and saved as seperate figures in for dic with {'metric_column_name': 'Y axis label'}
 # parameters_label= {'fps':"FPS (log scale)", 'fps_per_w_per_area':'$FPS/W/mm^2$' ,"fps_per_w":"FPS/W"}
-parameters_label = {'fps':"FPS (log scale)"}
+parameters_label = {"fps_per_w":"FPS/W"}
 # parameters_label= {}
 # * filters: column values to be removed from the plotting dataframe
 for metric in parameters_label:
@@ -110,7 +110,7 @@ for metric in parameters_label:
 
 df_descriptive = df[df['Model_Name'] == 'Gmean'].reset_index(drop=True)
 print(df_descriptive)
-parameter_column = 'fps'
+parameter_column = 'fps_per_w'
 findmax_query = parameter_column+"=="+parameter_column+".max()"
 max_row = df_descriptive.query(findmax_query)
 print("Max Row", max_row)
@@ -142,5 +142,19 @@ for idx in df_descriptive.index:
     print("The accelerator " + str(max_tpc_name) + " achieves "+str(increment) +
           "x times better "+parameter_column+" than "+str(df_descriptive['name'][idx]))
 
+df_descriptive = df_descriptive.drop(
+    df_descriptive[df_descriptive['name'] == max_tpc_name].index)
+# print("Details of Third best accelerator")
+# # print(df_descriptive)
+# max_row = df_descriptive.query(findmax_query)
+# max_tpc_name = max_row['name'].values[0]
+# max_fps = max_row[parameter_column]
 
+# for idx in df_descriptive.index:
+#     # print("MAX achieved", max_fps)
+#     # print("Compared with", )
+#     increment = max_fps/df_descriptive[parameter_column][idx]
+#     increment = increment.values[0]
+#     print("The accelerator " + str(max_tpc_name) + " achieves "+str(increment) +
+#           "x times better "+parameter_column+" than "+str(df_descriptive['name'][idx]))
 # print(df_descriptive.iloc[df['fps'].argmax()])
