@@ -19,21 +19,30 @@ https://arxiv.org/abs/2302.07036
 Please cite us if you use SC_ONN_SIM
 
 ```bash
-@misc{https://doi.org/10.48550/arxiv.2302.07036,
-  doi = {10.48550/ARXIV.2302.07036},
-  url = {https://arxiv.org/abs/2302.07036},
-  author = {Vatsavai, Sairam Sri and Karempudi, Venkata Sai Praneeth and Thakkar, Ishan and Salehi, Ahmad and Hastings, Todd},
-  keywords = {Hardware Architecture (cs.AR), Artificial Intelligence (cs.AI), Emerging Technologies (cs.ET), Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {SCONNA: A Stochastic Computing Based Optical Accelerator for Ultra-Fast, Energy-Efficient Inference of Integer-Quantized CNNs},
-  publisher = {arXiv},
-  year = {2023},
-  copyright = {Creative Commons Attribution 4.0 International}
+@inproceedings{DBLP:conf/ipps/VatsavaiKTSH23,
+  author       = {Sairam Sri Vatsavai and
+                  Venkata Sai Praneeth Karempudi and
+                  Ishan G. Thakkar and
+                  Sayed Ahmad Salehi and
+                  Jeffrey Todd Hastings},
+  title        = {{SCONNA:} {A} Stochastic Computing Based Optical Accelerator for Ultra-Fast,
+                  Energy-Efficient Inference of Integer-Quantized CNNs},
+  booktitle    = {{IEEE} International Parallel and Distributed Processing Symposium,
+                  {IPDPS} 2023, St. Petersburg, FL, USA, May 15-19, 2023},
+  pages        = {546--556},
+  publisher    = {{IEEE}},
+  year         = {2023},
+  url          = {https://doi.org/10.1109/IPDPS54959.2023.00061},
+  doi          = {10.1109/IPDPS54959.2023.00061},
+  timestamp    = {Tue, 25 Jul 2023 16:27:14 +0200},
+  biburl       = {https://dblp.org/rec/conf/ipps/VatsavaiKTSH23.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
 
 ```
 
 ### Video Tutorial
-https://www.youtube.com/watch?v=X6yifdEB7xU
+Upload on the way
 
 ### Accelerator Configuration 
 
