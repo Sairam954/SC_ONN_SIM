@@ -177,6 +177,16 @@ The accelerator MAM (HOLYLIGHT [6]) achieves 2.200145575993879x times better fps
 
 Please refer this repository for device level simulation files: https://github.com/uky-UCAT/MRR-PEOLG
 
+### Accuracy Drop Estimation
+To evaluate accuracy drop due to ADC error in SCONNA, we modified the PyTorch qunatized conv and linear modules at torch/ao/nn/quantized/ to introduced error in the forward pass of CNN inference
+We follow the steps recommended by the community of PyTorch Forum to introduce error : https://discuss.pytorch.org/t/adding-an-offset-to-qint8-tensor/164846
+Note: Below steps are only applicable to 8-bit integer quantized CNNs and for SCONNA evalautions we use pre-trained 8-bit integer quantized CNNs from TorchVision 
+Example of how linear layer forward method is updated to introduce error:
+```bash
+error = 0.001
+output = torch.ops.quantized.linear(x, self._packed_params._packed_params, self.scale, self.zero_point)
+output = torch.quantize_per_tensor(output.dequantize(), output.q_scale()*(1+error), output.q_zero_point(), output.dtype) 
+```
 
 
 
