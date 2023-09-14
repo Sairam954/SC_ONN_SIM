@@ -185,7 +185,8 @@ Example of how linear layer forward method is updated to introduce error:
 ```bash
 error = 0.001
 output = torch.ops.quantized.linear(x, self._packed_params._packed_params, self.scale, self.zero_point)
-output = torch.quantize_per_tensor(output.dequantize(), output.q_scale()*(1+error), output.q_zero_point(), output.dtype) 
+output = torch.quantize_per_tensor(output.dequantize(), output.q_scale()*(1+error), output.q_zero_point(), output.dtype)
+return output
 ```
 
 
