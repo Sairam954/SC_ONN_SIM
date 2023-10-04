@@ -42,7 +42,7 @@ Please cite us if you use SC_ONN_SIM
 ```
 
 ### Video Tutorial
-Upload on the way
+https://youtu.be/fjjq4jv_iCk
 
 ### Accelerator Configuration 
 
